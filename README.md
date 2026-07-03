@@ -40,6 +40,11 @@ docker compose up --build
 The backend container runs `alembic upgrade head` on startup, so the schema
 (including the `vector` extension) is created automatically.
 
+Ports collide often if you run more than one Next.js/Postgres project
+locally — override any of `FRONTEND_PORT` / `BACKEND_PORT` / `POSTGRES_PORT`
+in `.env` (docker-compose.yml already parameterizes all three) rather than
+stopping the other project.
+
 **If you already have Ollama running natively** (`brew install ollama` /
 ollama.ai, `ollama serve`), don't bother with the `local-models` profile —
 point the backend at your existing install instead, which gets you Metal
