@@ -33,14 +33,14 @@ def summarize_finances(
     entries = list(db.scalars(stmt))
     currency = entries[0].currency if entries else "INR"
 
-    revenue_by_category: dict[str, int] = {}
-    expense_by_category: dict[str, int] = {}
+    buckets: dict[str, dict[str, int]] = {"revenue": {}, "expense": {}, "capital": {}}
     for entry in entries:
-        bucket = revenue_by_category if entry.entry_type == "revenue" else expense_by_category
+        bucket = buckets.get(entry.entry_type, buckets["expense"])
         bucket[entry.category] = bucket.get(entry.category, 0) + entry.amount_cents
 
-    revenue_cents = sum(revenue_by_category.values())
-    expense_cents = sum(expense_by_category.values())
+    revenue_cents = sum(buckets["revenue"].values())
+    expense_cents = sum(buckets["expense"].values())
+    capital_cents = sum(buckets["capital"].values())
 
     return FinanceSummary(
         company_id=company_id,
@@ -48,13 +48,20 @@ def summarize_finances(
         currency=currency,
         revenue_cents=revenue_cents,
         expense_cents=expense_cents,
+        # Margin is strictly P&L (revenue - expense) — capital contributions
+        # are equity, not income, and must never inflate it.
         margin_cents=revenue_cents - expense_cents,
+        capital_cents=capital_cents,
         revenue_by_category=[
             CategoryBreakdown(category=k, amount_cents=v)
-            for k, v in sorted(revenue_by_category.items())
+            for k, v in sorted(buckets["revenue"].items())
         ],
         expense_by_category=[
             CategoryBreakdown(category=k, amount_cents=v)
-            for k, v in sorted(expense_by_category.items())
+            for k, v in sorted(buckets["expense"].items())
+        ],
+        capital_by_category=[
+            CategoryBreakdown(category=k, amount_cents=v)
+            for k, v in sorted(buckets["capital"].items())
         ],
     )

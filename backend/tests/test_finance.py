@@ -131,4 +131,41 @@ def test_summarize_finances_with_no_entries_returns_zeroed_summary(db_session):
     assert summary.revenue_cents == 0
     assert summary.expense_cents == 0
     assert summary.margin_cents == 0
+    assert summary.capital_cents == 0
     assert summary.revenue_by_category == []
+
+
+def test_capital_contributions_are_tracked_separately_from_margin(db_session):
+    """A founder's capital investment is equity, not income — it must show
+    up in capital_cents but never inflate revenue or margin."""
+    company = Company(name="Capitalized Co")
+    db_session.add(company)
+    db_session.commit()
+
+    db_session.add_all(
+        [
+            FinanceEntry(
+                company_id=company.id,
+                entry_type="capital",
+                category="founder_investment",
+                amount_cents=200_000_00,
+                occurred_on=date(2026, 1, 1),
+            ),
+            FinanceEntry(
+                company_id=company.id,
+                entry_type="revenue",
+                category="subscriptions",
+                amount_cents=10_00,
+                occurred_on=date(2026, 2, 1),
+            ),
+        ]
+    )
+    db_session.commit()
+
+    summary = summarize_finances(db_session, company_id=company.id)
+    assert summary.capital_cents == 200_000_00
+    assert summary.revenue_cents == 10_00
+    assert summary.margin_cents == 10_00  # capital must not leak into margin
+    assert {c.category: c.amount_cents for c in summary.capital_by_category} == {
+        "founder_investment": 200_000_00
+    }

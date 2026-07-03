@@ -7,6 +7,11 @@ from pydantic import BaseModel, ConfigDict
 class FinanceEntryType(StrEnum):
     revenue = "revenue"
     expense = "expense"
+    # Capital contributions (founder/investor paid-in capital) are an
+    # equity/balance-sheet event, not P&L — kept as a distinct entry type so
+    # they never inflate revenue or distort margin, but still show up in the
+    # dashboard a company actually needs to see them on.
+    capital = "capital"
 
 
 class FinanceEntryCreate(BaseModel):
@@ -40,5 +45,7 @@ class FinanceSummary(BaseModel):
     revenue_cents: int
     expense_cents: int
     margin_cents: int
+    capital_cents: int
     revenue_by_category: list[CategoryBreakdown]
     expense_by_category: list[CategoryBreakdown]
+    capital_by_category: list[CategoryBreakdown]

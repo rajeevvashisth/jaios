@@ -162,7 +162,7 @@ export type FinanceEntry = {
   id: string;
   company_id: string;
   product_id: string | null;
-  entry_type: "revenue" | "expense";
+  entry_type: "revenue" | "expense" | "capital";
   category: string;
   amount_cents: number;
   currency: string;
@@ -181,8 +181,10 @@ export type FinanceSummary = {
   revenue_cents: number;
   expense_cents: number;
   margin_cents: number;
+  capital_cents: number;
   revenue_by_category: CategoryBreakdown[];
   expense_by_category: CategoryBreakdown[];
+  capital_by_category: CategoryBreakdown[];
 };
 
 export type ComplianceUrgency = "completed" | "overdue" | "due_soon" | "upcoming";
@@ -357,7 +359,7 @@ export const api = {
     createEntry: (payload: {
       company_id: string;
       product_id?: string;
-      entry_type: "revenue" | "expense";
+      entry_type: "revenue" | "expense" | "capital";
       category: string;
       amount_cents: number;
       currency?: string;

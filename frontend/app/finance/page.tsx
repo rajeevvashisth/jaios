@@ -15,7 +15,7 @@ export default function FinancePage() {
   const [summary, setSummary] = useState<FinanceSummary | null>(null);
   const [entries, setEntries] = useState<FinanceEntry[]>([]);
 
-  const [entryType, setEntryType] = useState<"revenue" | "expense">("revenue");
+  const [entryType, setEntryType] = useState<"revenue" | "expense" | "capital">("revenue");
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
   const [occurredOn, setOccurredOn] = useState("");
@@ -138,15 +138,23 @@ export default function FinancePage() {
       {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
 
       {summary && (
-        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatCard label="Revenue" value={formatMoney(summary.revenue_cents, summary.currency)} />
-          <StatCard label="Expenses" value={formatMoney(summary.expense_cents, summary.currency)} />
-          <StatCard
-            label="Margin"
-            value={formatMoney(summary.margin_cents, summary.currency)}
-            highlight={summary.margin_cents < 0 ? "negative" : "positive"}
-          />
-        </div>
+        <>
+          <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <StatCard label="Revenue" value={formatMoney(summary.revenue_cents, summary.currency)} />
+            <StatCard label="Expenses" value={formatMoney(summary.expense_cents, summary.currency)} />
+            <StatCard
+              label="Margin"
+              value={formatMoney(summary.margin_cents, summary.currency)}
+              highlight={summary.margin_cents < 0 ? "negative" : "positive"}
+            />
+          </div>
+          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <StatCard
+              label="Capital raised (equity, not income)"
+              value={formatMoney(summary.capital_cents, summary.currency)}
+            />
+          </div>
+        </>
       )}
 
       <form onSubmit={handleCreate} className="mb-8 flex flex-wrap items-end gap-3">
@@ -154,11 +162,12 @@ export default function FinancePage() {
           <label className="block text-xs text-neutral-500">Type</label>
           <select
             value={entryType}
-            onChange={(e) => setEntryType(e.target.value as "revenue" | "expense")}
+            onChange={(e) => setEntryType(e.target.value as "revenue" | "expense" | "capital")}
             className="mt-1 rounded-md border border-neutral-300 bg-transparent px-2 py-1.5 text-sm dark:border-neutral-700"
           >
             <option value="revenue">Revenue</option>
             <option value="expense">Expense</option>
+            <option value="capital">Capital (founder/investor contribution)</option>
           </select>
         </div>
         <div>
