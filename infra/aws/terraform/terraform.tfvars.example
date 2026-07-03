@@ -1,0 +1,15 @@
+# Copy to terraform.tfvars (gitignored) and fill in, or pass equivalent
+# -var/TF_VAR_* flags — never commit real secrets into this file.
+
+aws_region   = "us-east-1"
+project_name = "jaios"
+environment  = "production"
+
+backend_image_tag  = "latest"
+frontend_image_tag = "latest"
+
+# Required, no default — generate with: openssl rand -hex 32
+jwt_secret_key = "REPLACE_ME"
+
+# Optional — leave blank to deploy without a default LLM key configured
+anthropic_api_key = ""

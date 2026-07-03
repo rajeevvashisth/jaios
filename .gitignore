@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+backend/jaios_backend.egg-info/
+
+# Node / Next.js
+node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+frontend/next-env.d.ts
+frontend/*.tsbuildinfo
+
+# Env / secrets
+.env
+*.local
+
+# Docker / data
+pgdata/
+infra/pgdata/
+
+# Agent tool sandbox (created at runtime by FilesystemTool/TerminalTool/GitTool)
+backend/workspace/
+workspace/
+
+# Terraform (the .terraform.lock.hcl provider lockfile IS committed)
+infra/aws/terraform/.terraform/
+infra/aws/terraform/terraform.tfstate
+infra/aws/terraform/terraform.tfstate.backup
+infra/aws/terraform/terraform.tfvars
+infra/aws/terraform/*.tfplan
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code harness-local state
+.claude/

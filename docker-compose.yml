@@ -1,0 +1,66 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-jaios}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jaios}
+      POSTGRES_DB: ${POSTGRES_DB:-jaios}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - jaios_pgdata:/var/lib/postgresql/data
+      - ./infra/init-db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jaios}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: infra/docker/backend.Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-jaios}:${POSTGRES_PASSWORD:-jaios}@postgres:5432/${POSTGRES_DB:-jaios}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: infra/docker/frontend.Dockerfile
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    volumes:
+      - ./frontend:/app
+      - jaios_frontend_node_modules:/app/node_modules
+    depends_on:
+      - backend
+
+  # Optional profile: local models via Ollama. Not required to boot the
+  # rest of the system — `docker compose --profile local-models up` to
+  # include it, and set DEFAULT_LLM_PROVIDER=ollama in .env.
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    profiles: ["local-models"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - jaios_ollama:/root/.ollama
+
+volumes:
+  jaios_pgdata:
+  jaios_frontend_node_modules:
+  jaios_ollama:
