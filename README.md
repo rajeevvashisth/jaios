@@ -40,12 +40,29 @@ docker compose up --build
 The backend container runs `alembic upgrade head` on startup, so the schema
 (including the `vector` extension) is created automatically.
 
-To also run a local model server:
+**If you already have Ollama running natively** (`brew install ollama` /
+ollama.ai, `ollama serve`), don't bother with the `local-models` profile —
+point the backend at your existing install instead, which gets you Metal
+GPU acceleration instead of the CPU-only VM Docker runs in:
+
+```bash
+# in .env:
+OLLAMA_BASE_URL=http://host.docker.internal:11434
+DEFAULT_LLM_PROVIDER=ollama
+DEFAULT_LLM_MODEL=llama3.2:latest   # or whatever `ollama list` shows you have
+```
+
+`host.docker.internal` is the container's route back to the host machine —
+`localhost` inside the backend container refers to the container itself,
+not your Mac, which is the most common way this setting goes wrong.
+
+Otherwise, to run a bundled local model server instead:
 
 ```bash
 docker compose --profile local-models up --build
 # then, in another shell:
-docker compose exec ollama ollama pull llama3.1
+docker compose exec ollama ollama pull llama3.2
+# and in .env: OLLAMA_BASE_URL=http://ollama:11434 (the compose service name)
 ```
 
 ## Run natively (no Docker)
