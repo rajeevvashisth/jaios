@@ -13,11 +13,20 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://jaios:jaios@localhost:5432/jaios"
 
+    # Global fallback provider config — used when a workspace has no
+    # AIProviderConfig rows of its own (e.g. this repo's own dev setup, or
+    # any workspace that hasn't configured BYOK yet). Per-workspace config
+    # in ai_provider_configs always takes priority; see
+    # services/model_router.py.
     anthropic_api_key: str | None = None
     openai_api_key: str | None = None
     ollama_base_url: str = "http://localhost:11434"
     default_llm_provider: str = "anthropic"
     default_llm_model: str = "claude-sonnet-5"
+
+    # Symmetric key for encrypting BYOK provider credentials at rest — see
+    # core/secrets.py for generation instructions and documented limits.
+    secret_encryption_key: str | None = None
 
     backend_port: int = 8000
 

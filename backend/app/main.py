@@ -7,6 +7,7 @@ from sqlalchemy import text
 
 from app.api.routers import (
     agents,
+    ai_providers,
     audit,
     auth,
     companies,
@@ -19,6 +20,7 @@ from app.api.routers import (
     reports,
     tasks,
     workflows,
+    workspaces,
 )
 from app.core.logging import configure_logging, get_logger
 from app.core.middleware import ObservabilityMiddleware
@@ -67,6 +69,7 @@ def create_app() -> FastAPI:
     app.add_middleware(ObservabilityMiddleware)
 
     for router in (
+        workspaces,
         companies,
         products,
         projects,
@@ -80,6 +83,7 @@ def create_app() -> FastAPI:
         compliance,
         reports,
         auth,
+        ai_providers,
     ):
         app.include_router(router.router, prefix="/api")
 

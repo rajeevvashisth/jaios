@@ -1,15 +1,24 @@
-# JAIOS — Jyka AI Operating System
+# JAIOS — AI Operating System
 
-A company-wide agentic operating system for Jyka Labs: 8 core agents (CEO,
-CTO, Developer, DevOps, QA, Finance, Legal, Operations) orchestrated with
-LangGraph, backed by a company/product/project/task domain model, a
+A multi-tenant AI operating system for running a company: workspaces own
+one or more companies, each with products, tasks, workflows, a finance
+ledger, and a compliance register. 8 core agents (CEO, CTO, Developer,
+DevOps, QA, Finance, Legal, Operations) are orchestrated with LangGraph
+against that structured data, with a provider-agnostic AI layer (bring your
+own Claude/OpenAI key, or run local models via Ollama) and a model router
+that picks provider/model by task type and workspace operating mode instead
+of always reaching for the most expensive option. Backed by a
 Postgres+pgvector memory and knowledge layer, a governed tool framework, a
 Next.js dashboard, JWT auth, and Prometheus metrics — deployable locally via
 Docker Compose or to AWS via the included Terraform skeleton.
 
-See [`docs/architecture.md`](docs/architecture.md) for the full architecture
-across all five phases (domain model, agent registry, orchestration design,
-database schema, frontend structure, observability, auth, cloud readiness).
+**Jyka Labs LLP** (an India-registered LLP building ThandiMandi) is JAIOS's
+first live workspace — proof the platform runs a real company, not just a
+demo. See [`docs/README.md`](docs/README.md) for the full documentation set
+(quick start, AI provider setup, operating modes, first workflows) and
+[`docs/architecture.md`](docs/architecture.md) for the technical
+architecture (domain model, agent registry, orchestration design, database
+schema, frontend structure, observability, auth, cloud readiness).
 
 ## Prerequisites
 

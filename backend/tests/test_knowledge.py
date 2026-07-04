@@ -1,6 +1,5 @@
 from app.knowledge.ingest import chunk_text, ingest_document
 from app.knowledge.retrieval import search_knowledge
-from app.models.company import Company
 
 
 def test_chunk_text_produces_overlapping_chunks():
@@ -10,10 +9,8 @@ def test_chunk_text_produces_overlapping_chunks():
     assert chunks[0][-100:] == chunks[1][:100]
 
 
-def test_ingest_and_search_round_trip(db_session):
-    company = Company(name="Knowledge Co")
-    db_session.add(company)
-    db_session.commit()
+def test_ingest_and_search_round_trip(db_session, make_company):
+    company = make_company("Knowledge Co")
 
     ingest_document(
         db_session,
@@ -29,11 +26,9 @@ def test_ingest_and_search_round_trip(db_session):
     assert results[0].document_title == "Onboarding SOP"
 
 
-def test_search_is_scoped_to_company(db_session):
-    company_a = Company(name="Company A")
-    company_b = Company(name="Company B")
-    db_session.add_all([company_a, company_b])
-    db_session.commit()
+def test_search_is_scoped_to_company(db_session, make_company):
+    company_a = make_company("Company A")
+    company_b = make_company("Company B")
 
     ingest_document(
         db_session,

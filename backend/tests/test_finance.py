@@ -5,12 +5,16 @@ import pytest
 from app.models.company import Company
 from app.models.finance import FinanceEntry
 from app.models.product import Product
+from app.models.workspace import Workspace
 from app.schemas.finance import FinanceEntryUpdate
 from app.services.finance_service import summarize_finances, update_entry
 
 
 def _make_company_and_product(db_session, name: str):
-    company = Company(name=name)
+    workspace = Workspace(name=f"{name} Workspace")
+    db_session.add(workspace)
+    db_session.commit()
+    company = Company(name=name, workspace_id=workspace.id)
     db_session.add(company)
     db_session.commit()
     product = Product(company_id=company.id, name=f"{name} Product")
@@ -125,10 +129,8 @@ def test_summarize_finances_scopes_by_date_range(db_session):
     assert summary.revenue_cents == 200_00
 
 
-def test_summarize_finances_with_no_entries_returns_zeroed_summary(db_session):
-    company = Company(name="Empty Finance Co")
-    db_session.add(company)
-    db_session.commit()
+def test_summarize_finances_with_no_entries_returns_zeroed_summary(db_session, make_company):
+    company = make_company("Empty Finance Co")
 
     summary = summarize_finances(db_session, company_id=company.id)
     assert summary.revenue_cents == 0
@@ -138,12 +140,10 @@ def test_summarize_finances_with_no_entries_returns_zeroed_summary(db_session):
     assert summary.revenue_by_category == []
 
 
-def test_capital_contributions_are_tracked_separately_from_margin(db_session):
+def test_capital_contributions_are_tracked_separately_from_margin(db_session, make_company):
     """A founder's capital investment is equity, not income — it must show
     up in capital_cents but never inflate revenue or margin."""
-    company = Company(name="Capitalized Co")
-    db_session.add(company)
-    db_session.commit()
+    company = make_company("Capitalized Co")
 
     db_session.add_all(
         [
@@ -174,10 +174,8 @@ def test_capital_contributions_are_tracked_separately_from_margin(db_session):
     }
 
 
-def test_update_entry_applies_partial_changes(db_session):
-    company = Company(name="Update Entry Co")
-    db_session.add(company)
-    db_session.commit()
+def test_update_entry_applies_partial_changes(db_session, make_company):
+    company = make_company("Update Entry Co")
 
     entry = FinanceEntry(
         company_id=company.id,

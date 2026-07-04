@@ -167,14 +167,11 @@ def test_get_other_companys_workflow_run_is_404(client, db_session):
     assert resp.status_code == 404
 
 
-def test_agents_patch_requires_admin_role(client, db_session):
+def test_agents_patch_requires_admin_role(client, db_session, make_company):
     from app.core.security import create_access_token
-    from app.models.company import Company
     from app.services.user_service import register_user
 
-    company = Company(name="Agents Role Co")
-    db_session.add(company)
-    db_session.commit()
+    company = make_company("Agents Role Co")
     user = register_user(
         db_session, company_id=company.id, email="member@example.com", password="pw"
     )

@@ -10,17 +10,45 @@ from app.core.metrics import agent_turns_total
 from app.db.session import SessionLocal
 from app.governance import audit_log
 from app.governance.approvals import action_requires_approval, create_approval_request
+from app.models.company import Company
 from app.models.workflow import WorkflowStep
 from app.orchestration.state import WorkflowState
+from app.services import ai_usage_service, model_router
 
 logger = get_logger(__name__)
 
+# Maps each agent to the routing task_type that best describes its work —
+# see services/model_router.py for how task_type drives provider/model
+# choice. Agents not listed default to "general_chat" (local tier).
+AGENT_TASK_TYPE: dict[str, str] = {
+    "ceo": "company_planning",
+    "cto": "product_feature_planning",
+    "developer": "coding_assistance",
+    "qa": "coding_assistance",
+    "devops": "coding_assistance",
+    "finance": "finance_summary",
+    "legal": "compliance_summary",
+    "operations": "workflow_followup_draft",
+}
 
-def plan_with_llm(agent_key: str, state: WorkflowState) -> str:
+
+def _resolve_workspace_id(db: Session, company_id: str | None) -> str | None:
+    if not company_id:
+        return None
+    company = db.get(Company, company_id)
+    return company.workspace_id if company else None
+
+
+def plan_with_llm(agent_key: str, state: WorkflowState, db: Session) -> str:
     """Call the agent's LLM with its system prompt + the workflow goal +
     prior agents' outputs. Shared by the generic node builder and the
     specialized Developer/QA nodes, which follow this call with an actual
     tool invocation rather than treating the LLM's text as the final word.
+
+    Routes the call through ``model_router`` (task type -> provider/model,
+    honoring the workspace's configured BYOK providers and operating mode)
+    and logs a best-effort usage record — a failure logging usage must
+    never break the agent turn itself.
     """
     spec = agent_registry.get(agent_key)
     messages = [
@@ -34,7 +62,34 @@ def plan_with_llm(agent_key: str, state: WorkflowState) -> str:
             ),
         ),
     ]
-    return get_chat_model().invoke(messages).content
+
+    task_type = AGENT_TASK_TYPE.get(agent_key, "general_chat")
+    workspace_id = _resolve_workspace_id(db, state.get("company_id"))
+    decision = model_router.route(
+        db, workspace_id=workspace_id, task_type=task_type, agent_key=agent_key
+    )
+
+    response = get_chat_model(
+        decision.provider, decision.model, api_key=decision.api_key, base_url=decision.base_url
+    ).invoke(messages)
+
+    try:
+        usage = (response.raw or {}).get("usage", {}) if response.raw else {}
+        ai_usage_service.record_usage(
+            db,
+            workspace_id=workspace_id,
+            provider=response.provider,
+            model=response.model,
+            task_type=task_type,
+            agent_key=agent_key,
+            tokens_in=usage.get("input_tokens") or usage.get("prompt_tokens"),
+            tokens_out=usage.get("output_tokens") or usage.get("completion_tokens"),
+            workflow_run_id=state.get("workflow_run_id"),
+        )
+    except Exception:  # noqa: BLE001 — usage logging must never break the agent turn
+        logger.warning("ai_usage_log_failed", agent_key=agent_key, task_type=task_type)
+
+    return response.content
 
 
 def record_step(
@@ -116,7 +171,7 @@ def build_agent_node(agent_key: str, action_type: str | None = None):
                         },
                     }
 
-            response_text = plan_with_llm(agent_key, state)
+            response_text = plan_with_llm(agent_key, state, db)
             output = {"response": response_text}
             record_step(db, state, agent_key, output)
 

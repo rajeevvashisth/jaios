@@ -5,6 +5,8 @@ from sqlalchemy.orm import sessionmaker
 from app.config import get_settings
 from app.db.base import Base
 from app.models import *  # noqa: F401,F403 — populate metadata
+from app.models.company import Company
+from app.models.workspace import Workspace
 from app.services.agent_service import sync_agent_definitions
 
 
@@ -45,6 +47,27 @@ def db_session(_engine):
     finally:
         session.rollback()
         session.close()
+
+
+@pytest.fixture()
+def make_company(db_session):
+    """Every company now requires a workspace_id (the multi-tenant top
+    level — see models/workspace.py). Most tests don't care about the
+    workspace itself, just that a valid company exists, so this creates
+    a throwaway workspace named after the company and returns the
+    persisted ``Company`` — a one-line replacement for the old
+    ``Company(name=...); db_session.add(...); db_session.commit()``."""
+
+    def _make(name: str, **kwargs) -> Company:
+        workspace = Workspace(name=f"{name} Workspace")
+        db_session.add(workspace)
+        db_session.commit()
+        company = Company(name=name, workspace_id=workspace.id, **kwargs)
+        db_session.add(company)
+        db_session.commit()
+        return company
+
+    return _make
 
 
 @pytest.fixture()

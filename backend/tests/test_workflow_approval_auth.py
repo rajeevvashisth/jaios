@@ -27,14 +27,11 @@ def test_approve_endpoint_requires_auth(client):
     assert resp.status_code == 401
 
 
-def test_approve_endpoint_rejects_viewer_role(client, db_session):
+def test_approve_endpoint_rejects_viewer_role(client, db_session, make_company):
     from app.core.security import create_access_token
-    from app.models.company import Company
     from app.services.user_service import register_user
 
-    company = Company(name="Viewer Approve Co")
-    db_session.add(company)
-    db_session.commit()
+    company = make_company("Viewer Approve Co")
 
     user = register_user(
         db_session, company_id=company.id, email="viewer@example.com", password="pw"

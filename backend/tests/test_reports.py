@@ -2,7 +2,6 @@ from datetime import date, timedelta
 
 import pytest
 
-from app.models.company import Company
 from app.models.compliance import ComplianceObligation
 from app.models.finance import FinanceEntry
 from app.models.product import Product
@@ -12,10 +11,8 @@ from app.models.workflow import ApprovalRequest, WorkflowRun
 from app.services.reports_service import get_ceo_summary, get_product_status_report
 
 
-def test_ceo_summary_aggregates_portfolio_finance_ops_and_compliance(db_session):
-    company = Company(name="Reports Co")
-    db_session.add(company)
-    db_session.commit()
+def test_ceo_summary_aggregates_portfolio_finance_ops_and_compliance(db_session, make_company):
+    company = make_company("Reports Co")
 
     product = Product(company_id=company.id, name="Flagship", stage="live", status="active")
     db_session.add(product)
@@ -96,10 +93,8 @@ def test_ceo_summary_aggregates_portfolio_finance_ops_and_compliance(db_session)
     assert len(summary.recent_workflow_runs) == 1
 
 
-def test_product_status_report(db_session):
-    company = Company(name="Product Report Co")
-    db_session.add(company)
-    db_session.commit()
+def test_product_status_report(db_session, make_company):
+    company = make_company("Product Report Co")
 
     product = Product(company_id=company.id, name="Widget", stage="building")
     db_session.add(product)

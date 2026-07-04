@@ -1,13 +1,10 @@
 import pytest
 
-from app.models.company import Company
 from app.services.user_service import authenticate_user, register_user
 
 
-def test_first_user_for_company_becomes_admin(db_session):
-    company = Company(name="Auth Co")
-    db_session.add(company)
-    db_session.commit()
+def test_first_user_for_company_becomes_admin(db_session, make_company):
+    company = make_company("Auth Co")
 
     user = register_user(
         db_session, company_id=company.id, email="first@example.com", password="pw"
@@ -15,10 +12,8 @@ def test_first_user_for_company_becomes_admin(db_session):
     assert user.role == "admin"
 
 
-def test_second_user_for_company_becomes_member(db_session):
-    company = Company(name="Auth Co 2")
-    db_session.add(company)
-    db_session.commit()
+def test_second_user_for_company_becomes_member(db_session, make_company):
+    company = make_company("Auth Co 2")
 
     register_user(db_session, company_id=company.id, email="first2@example.com", password="pw")
     second = register_user(
@@ -27,20 +22,16 @@ def test_second_user_for_company_becomes_member(db_session):
     assert second.role == "member"
 
 
-def test_duplicate_email_rejected(db_session):
-    company = Company(name="Auth Co 3")
-    db_session.add(company)
-    db_session.commit()
+def test_duplicate_email_rejected(db_session, make_company):
+    company = make_company("Auth Co 3")
 
     register_user(db_session, company_id=company.id, email="dupe@example.com", password="pw")
     with pytest.raises(ValueError):
         register_user(db_session, company_id=company.id, email="dupe@example.com", password="pw2")
 
 
-def test_authenticate_user_rejects_wrong_password(db_session):
-    company = Company(name="Auth Co 4")
-    db_session.add(company)
-    db_session.commit()
+def test_authenticate_user_rejects_wrong_password(db_session, make_company):
+    company = make_company("Auth Co 4")
     register_user(db_session, company_id=company.id, email="pw@example.com", password="rightpw")
 
     assert authenticate_user(db_session, email="pw@example.com", password="wrongpw") is None

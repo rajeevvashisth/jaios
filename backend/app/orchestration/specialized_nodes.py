@@ -33,7 +33,7 @@ def build_developer_node():
     def node(state: WorkflowState) -> dict[str, Any]:
         db = SessionLocal()
         try:
-            plan = plan_with_llm("developer", state)
+            plan = plan_with_llm("developer", state, db)
             tool_result = invoke_tool_for_agent(
                 db,
                 agent_key="developer",
@@ -67,7 +67,7 @@ def build_qa_node():
     def node(state: WorkflowState) -> dict[str, Any]:
         db = SessionLocal()
         try:
-            plan = plan_with_llm("qa", state)
+            plan = plan_with_llm("qa", state, db)
             tool_result = invoke_tool_for_agent(
                 db,
                 agent_key="qa",

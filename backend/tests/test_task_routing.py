@@ -1,4 +1,3 @@
-from app.models.company import Company
 from app.models.task import Task
 from app.services.task_routing import route_task, suggest_agent_for_task
 
@@ -28,10 +27,8 @@ def test_suggest_agent_falls_back_to_operations_when_no_keywords_match():
     assert suggest_agent_for_task(task) == "operations"
 
 
-def test_route_task_persists_assignee(db_session):
-    company = Company(name="Routing Co")
-    db_session.add(company)
-    db_session.commit()
+def test_route_task_persists_assignee(db_session, make_company):
+    company = make_company("Routing Co")
 
     task = Task(company_id=company.id, title="Fix Docker build pipeline")
     db_session.add(task)

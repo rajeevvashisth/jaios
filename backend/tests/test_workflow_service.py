@@ -2,11 +2,15 @@ from app.models.company import Company
 from app.models.product import Product
 from app.models.project import Project
 from app.models.task import Task
+from app.models.workspace import Workspace
 from app.services.workflow_service import _resolve_workspace_path
 
 
 def _make_company_and_product(db_session, name: str, workspace_path: str | None):
-    company = Company(name=name)
+    tenant_workspace = Workspace(name=f"{name} Workspace")
+    db_session.add(tenant_workspace)
+    db_session.commit()
+    company = Company(name=name, workspace_id=tenant_workspace.id)
     db_session.add(company)
     db_session.commit()
     product = Product(

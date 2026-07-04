@@ -1,22 +1,53 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_db, require_role
+from app.api.deps import (
+    get_current_user,
+    get_current_user_optional,
+    get_current_workspace_id,
+    get_db,
+    require_role,
+)
 from app.models.company import Company
 from app.models.user import User
+from app.models.workspace import Workspace
 from app.schemas.company import CompanyCreate, CompanyRead, CompanyUpdate
 
 router = APIRouter(prefix="/companies", tags=["companies"])
 
 
 @router.post("", response_model=CompanyRead)
-def create_company(payload: CompanyCreate, db: Session = Depends(get_db)) -> Company:
-    # Intentionally unauthenticated: creating a company is the tenant
-    # bootstrap step. There is no user to authenticate as until one is
-    # registered against a company_id (see POST /auth/register), so this
-    # has to stay reachable before any account exists — mirrors why
-    # /auth/register and /auth/login are also unauthenticated.
-    company = Company(**payload.model_dump())
+def create_company(
+    payload: CompanyCreate,
+    current_user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+) -> Company:
+    # Intentionally reachable without auth — same bootstrap reasoning as
+    # /auth/register: there's no user to authenticate as before the very
+    # first company (and its workspace) exists. Two paths:
+    #   - no workspace_id: bootstrap a brand new workspace for this
+    #     company, anonymous or not (this is how the first company in a
+    #     fresh install gets created).
+    #   - workspace_id given: adding a second company to an *existing*
+    #     workspace, which does require being signed in as a member of
+    #     that workspace — otherwise anyone could attach a company to a
+    #     workspace they merely guessed the id of.
+    if payload.workspace_id:
+        if current_user is None:
+            raise HTTPException(
+                status_code=403, detail="Sign in to add a company to an existing workspace"
+            )
+        if get_current_workspace_id(db, current_user) != payload.workspace_id:
+            raise HTTPException(status_code=403, detail="Not authorized for this workspace")
+        workspace_id = payload.workspace_id
+    else:
+        workspace = Workspace(name=f"{payload.name} Workspace")
+        db.add(workspace)
+        db.commit()
+        db.refresh(workspace)
+        workspace_id = workspace.id
+
+    company = Company(**payload.model_dump(exclude={"workspace_id"}), workspace_id=workspace_id)
     db.add(company)
     db.commit()
     db.refresh(company)

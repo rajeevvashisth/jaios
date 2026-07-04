@@ -1,6 +1,5 @@
 from datetime import date, timedelta
 
-from app.models.company import Company
 from app.models.compliance import ComplianceObligation
 from app.schemas.compliance import ComplianceObligationUpdate, ComplianceUrgency, FilingStatus
 from app.services.compliance_service import (
@@ -62,10 +61,8 @@ def test_compute_urgency_not_applicable_reads_as_completed():
     assert compute_urgency(obligation, today=TODAY) == ComplianceUrgency.completed
 
 
-def test_list_obligations_excludes_completed_by_default(db_session):
-    company = Company(name="Compliance Co")
-    db_session.add(company)
-    db_session.commit()
+def test_list_obligations_excludes_completed_by_default(db_session, make_company):
+    company = make_company("Compliance Co")
 
     db_session.add_all(
         [
@@ -90,10 +87,8 @@ def test_list_obligations_excludes_completed_by_default(db_session):
     assert {r.title for r in all_results} == {"Open one", "Done one"}
 
 
-def test_mark_completed_sets_completed_and_timestamp(db_session):
-    company = Company(name="Complete Co")
-    db_session.add(company)
-    db_session.commit()
+def test_mark_completed_sets_completed_and_timestamp(db_session, make_company):
+    company = make_company("Complete Co")
 
     obligation = ComplianceObligation(
         company_id=company.id,
@@ -110,12 +105,10 @@ def test_mark_completed_sets_completed_and_timestamp(db_session):
     assert result.urgency == ComplianceUrgency.completed
 
 
-def test_create_obligation_defaults_to_review_pending_when_persisted(db_session):
+def test_create_obligation_defaults_to_review_pending_when_persisted(db_session, make_company):
     """Unlike the in-memory ``_obligation()`` helper above, a row that's
     actually inserted picks up the model's column defaults."""
-    company = Company(name="Default Status Co")
-    db_session.add(company)
-    db_session.commit()
+    company = make_company("Default Status Co")
 
     obligation = ComplianceObligation(
         company_id=company.id, title="GST filing", category="tax", due_date=None
@@ -128,10 +121,8 @@ def test_create_obligation_defaults_to_review_pending_when_persisted(db_session)
     assert obligation.filing_status == "draft"
 
 
-def test_update_obligation_applies_partial_changes(db_session):
-    company = Company(name="Update Obligation Co")
-    db_session.add(company)
-    db_session.commit()
+def test_update_obligation_applies_partial_changes(db_session, make_company):
+    company = make_company("Update Obligation Co")
 
     obligation = ComplianceObligation(
         company_id=company.id, title="GST filing", category="tax", due_date=None
@@ -159,10 +150,8 @@ def test_update_obligation_applies_partial_changes(db_session):
     assert result.completed is False
 
 
-def test_update_obligation_to_filed_marks_completed(db_session):
-    company = Company(name="Filed Obligation Co")
-    db_session.add(company)
-    db_session.commit()
+def test_update_obligation_to_filed_marks_completed(db_session, make_company):
+    company = make_company("Filed Obligation Co")
 
     obligation = ComplianceObligation(
         company_id=company.id, title="Form 11", category="corporate", due_date=None

@@ -97,8 +97,19 @@ class OllamaChatModel:
         )
 
 
-def get_chat_model(provider: str | None = None, model: str | None = None) -> ChatModel:
-    """Return a chat model for the given provider, defaulting to app settings.
+def get_chat_model(
+    provider: str | None = None,
+    model: str | None = None,
+    *,
+    api_key: str | None = None,
+    base_url: str | None = None,
+) -> ChatModel:
+    """Return a chat model for the given provider.
+
+    ``api_key``/``base_url`` let a caller pass workspace-level BYOK
+    credentials (see ``services/model_router.py``) instead of the global
+    env-configured ones — when omitted, falls back to app settings exactly
+    as before BYOK existed.
 
     Raises ``ValueError`` for an unknown provider and ``RuntimeError`` if the
     provider is selected but its credentials are missing — both are
@@ -109,14 +120,16 @@ def get_chat_model(provider: str | None = None, model: str | None = None) -> Cha
     model = model or settings.default_llm_model
 
     if provider == "anthropic":
-        if not settings.anthropic_api_key:
+        key = api_key or settings.anthropic_api_key
+        if not key:
             raise RuntimeError("ANTHROPIC_API_KEY is not set")
-        return AnthropicChatModel(model=model, api_key=settings.anthropic_api_key)
+        return AnthropicChatModel(model=model, api_key=key)
     if provider == "openai":
-        if not settings.openai_api_key:
+        key = api_key or settings.openai_api_key
+        if not key:
             raise RuntimeError("OPENAI_API_KEY is not set")
-        return OpenAIChatModel(model=model, api_key=settings.openai_api_key)
+        return OpenAIChatModel(model=model, api_key=key)
     if provider == "ollama":
-        return OllamaChatModel(model=model, base_url=settings.ollama_base_url)
+        return OllamaChatModel(model=model, base_url=base_url or settings.ollama_base_url)
 
     raise ValueError(f"Unknown LLM provider: {provider}")

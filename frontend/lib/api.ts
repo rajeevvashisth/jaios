@@ -31,6 +31,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export type Company = {
   id: string;
+  workspace_id: string;
   name: string;
   mission: string | null;
   strategic_goals: string[];
@@ -38,6 +39,53 @@ export type Company = {
   country: string;
   jurisdiction_state: string | null;
   base_currency: string;
+};
+
+export type OperatingMode = "balanced" | "lowest_cost" | "highest_quality" | "privacy_first";
+
+export type Workspace = {
+  id: string;
+  name: string;
+  operating_mode: OperatingMode;
+  monthly_budget_cents: number | null;
+  daily_budget_cents: number | null;
+  ask_before_premium: boolean;
+};
+
+export type AIProviderKind = "anthropic" | "openai" | "ollama";
+
+export type AIProviderConfig = {
+  id: string;
+  workspace_id: string;
+  provider: AIProviderKind;
+  display_name: string | null;
+  is_enabled: boolean;
+  is_default: boolean;
+  has_api_key: boolean;
+  base_url: string | null;
+  default_model: string | null;
+};
+
+export type AIUsageRecord = {
+  id: string;
+  workspace_id: string;
+  provider: string;
+  model: string;
+  task_type: string;
+  agent_key: string | null;
+  tokens_in: number | null;
+  tokens_out: number | null;
+  workflow_run_id: string | null;
+  occurred_at: string;
+};
+
+export type AIUsageSummary = {
+  workspace_id: string;
+  total_calls: number;
+  total_tokens_in: number;
+  total_tokens_out: number;
+  calls_by_provider: Record<string, number>;
+  calls_by_task_type: Record<string, number>;
 };
 
 export type Product = {
@@ -311,7 +359,7 @@ export const api = {
   companies: {
     list: () => request<Company[]>("/companies"),
     create: (
-      payload: { name: string; mission?: string } & Partial<
+      payload: { name: string; mission?: string; workspace_id?: string } & Partial<
         Pick<Company, "entity_type" | "country" | "jurisdiction_state" | "base_currency" | "strategic_goals">
       >,
     ) => request<Company>("/companies", { method: "POST", body: JSON.stringify(payload) }),
@@ -547,5 +595,52 @@ export const api = {
         body: JSON.stringify(payload),
       }),
     me: () => request<User>("/auth/me"),
+  },
+  workspaces: {
+    getMine: () => request<Workspace>("/workspaces/me"),
+    update: (workspaceId: string, payload: Partial<Omit<Workspace, "id">>) =>
+      request<Workspace>(`/workspaces/${workspaceId}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      }),
+  },
+  ai: {
+    listProviders: (workspaceId: string) =>
+      request<AIProviderConfig[]>(`/ai/providers?workspace_id=${workspaceId}`),
+    createProvider: (payload: {
+      workspace_id: string;
+      provider: AIProviderKind;
+      display_name?: string;
+      is_enabled?: boolean;
+      is_default?: boolean;
+      api_key?: string;
+      base_url?: string;
+      default_model?: string;
+    }) =>
+      request<AIProviderConfig>("/ai/providers", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    updateProvider: (
+      configId: string,
+      payload: Partial<{
+        display_name: string;
+        is_enabled: boolean;
+        is_default: boolean;
+        api_key: string;
+        base_url: string;
+        default_model: string;
+      }>,
+    ) =>
+      request<AIProviderConfig>(`/ai/providers/${configId}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      }),
+    deleteProvider: (configId: string) =>
+      request<void>(`/ai/providers/${configId}`, { method: "DELETE" }),
+    listUsage: (workspaceId: string, limit = 200) =>
+      request<AIUsageRecord[]>(`/ai/usage?workspace_id=${workspaceId}&limit=${limit}`),
+    usageSummary: (workspaceId: string) =>
+      request<AIUsageSummary>(`/ai/usage/summary?workspace_id=${workspaceId}`),
   },
 };

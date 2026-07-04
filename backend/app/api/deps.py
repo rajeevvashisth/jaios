@@ -7,9 +7,18 @@ from sqlalchemy.orm import Session
 
 from app.core.security import decode_access_token
 from app.db.session import get_db
+from app.models.company import Company
 from app.models.user import User
 
-__all__ = ["get_db", "get_current_user", "require_role", "require_own_company"]
+__all__ = [
+    "get_db",
+    "get_current_user",
+    "get_current_user_optional",
+    "require_role",
+    "require_own_company",
+    "require_own_workspace",
+    "get_current_workspace_id",
+]
 
 _bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -33,6 +42,23 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive"
         )
     return user
+
+
+def get_current_user_optional(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
+    db: Session = Depends(get_db),
+) -> User | None:
+    """Like ``get_current_user`` but returns ``None`` instead of raising —
+    for the few endpoints (company bootstrap) that behave differently for
+    a signed-in vs. anonymous caller rather than requiring auth outright."""
+    if credentials is None:
+        return None
+    try:
+        payload = decode_access_token(credentials.credentials)
+    except jwt.PyJWTError:
+        return None
+    user = db.get(User, payload.get("sub"))
+    return user if user is not None and user.is_active else None
 
 
 def require_role(*roles: str) -> Callable[[User], User]:
@@ -63,4 +89,23 @@ def require_own_company(current_user: User, company_id: str) -> None:
     if company_id != current_user.company_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for this company"
+        )
+
+
+def get_current_workspace_id(db: Session, current_user: User) -> str | None:
+    """Resolve the authenticated user's own workspace via their company —
+    there's no direct User -> Workspace link (see models/workspace.py's
+    docstring on why), so this is the one place that indirection lives."""
+    company = db.get(Company, current_user.company_id)
+    return company.workspace_id if company else None
+
+
+def require_own_workspace(db: Session, current_user: User, workspace_id: str) -> None:
+    """Raise 403 unless ``workspace_id`` matches the authenticated user's
+    own workspace (resolved through their company) — the workspace-level
+    equivalent of ``require_own_company``, for AI provider config, usage,
+    and policy endpoints that are scoped to the workspace, not a company."""
+    if workspace_id != get_current_workspace_id(db, current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for this workspace"
         )

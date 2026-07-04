@@ -26,6 +26,9 @@ jobs:
 
     env:
       DATABASE_URL: postgresql+psycopg://jaios:jaios@localhost:5432/jaios
+      # Test-only key so BYOK encryption tests can run — never use a
+      # committed key for any real deployment.
+      SECRET_ENCRYPTION_KEY: "wgLRVGFJZEmN7hiserz777q_GrrhMvAJcWx-CUkrUSM="
 
     steps:
       - uses: actions/checkout@v4

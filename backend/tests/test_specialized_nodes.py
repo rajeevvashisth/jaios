@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 from app.models.company import Company
 from app.models.workflow import WorkflowRun, WorkflowStep
+from app.models.workspace import Workspace
 from app.orchestration.specialized_nodes import build_developer_node, build_qa_node
 
 
@@ -19,7 +20,10 @@ def _make_run_id(db_session, name: str) -> str:
     its own DB session (which, in these tests, monkeypatches to the shared
     ``db_session`` fixture), which would otherwise leave any ORM object we
     kept around detached and unusable for follow-up assertions."""
-    company = Company(name=name)
+    workspace = Workspace(name=f"{name} Workspace")
+    db_session.add(workspace)
+    db_session.commit()
+    company = Company(name=name, workspace_id=workspace.id)
     db_session.add(company)
     db_session.commit()
     run = WorkflowRun(graph_name="task_delegation", initiating_actor="test", company_id=company.id)

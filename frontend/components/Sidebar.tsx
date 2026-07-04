@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { href: "/memory", label: "Memory / Activity" },
   { href: "/workflows", label: "Workflows" },
   { href: "/logs", label: "Logs / Traces" },
+  { href: "/ai", label: "AI Settings" },
   { href: "/settings", label: "Settings" },
 ];
 

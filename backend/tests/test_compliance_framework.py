@@ -1,12 +1,9 @@
-from app.models.company import Company
 from app.schemas.compliance import ApplicabilityStatus
 from app.services.compliance_framework import seed_india_llp_compliance_framework
 
 
-def test_seed_creates_items_without_fabricating_due_dates(db_session):
-    company = Company(name="Framework Seed Co")
-    db_session.add(company)
-    db_session.commit()
+def test_seed_creates_items_without_fabricating_due_dates(db_session, make_company):
+    company = make_company("Framework Seed Co")
 
     created = seed_india_llp_compliance_framework(db_session, company_id=company.id)
 
@@ -18,10 +15,8 @@ def test_seed_creates_items_without_fabricating_due_dates(db_session):
         assert obligation.due_date is None
 
 
-def test_seed_marks_blanket_llp_filings_as_applicable(db_session):
-    company = Company(name="Framework Applicable Co")
-    db_session.add(company)
-    db_session.commit()
+def test_seed_marks_blanket_llp_filings_as_applicable(db_session, make_company):
+    company = make_company("Framework Applicable Co")
 
     created = seed_india_llp_compliance_framework(db_session, company_id=company.id)
     by_title = {o.title: o for o in created}
@@ -31,10 +26,8 @@ def test_seed_marks_blanket_llp_filings_as_applicable(db_session):
     assert by_title["Income Tax Return (LLP)"].applicability_status == "applicable"
 
 
-def test_seed_marks_conditional_items_as_review_pending(db_session):
-    company = Company(name="Framework Review Pending Co")
-    db_session.add(company)
-    db_session.commit()
+def test_seed_marks_conditional_items_as_review_pending(db_session, make_company):
+    company = make_company("Framework Review Pending Co")
 
     created = seed_india_llp_compliance_framework(db_session, company_id=company.id)
     by_title = {o.title: o for o in created}
