@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { api, type Product, type ProductStatusReport } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import { PageHeader } from "@/components/PageHeader";
+import { LoadingState } from "@/components/Spinner";
 
 export default function ProductStatusPage() {
   const params = useParams<{ productId: string }>();
@@ -59,7 +60,7 @@ export default function ProductStatusPage() {
     );
   }
 
-  if (!report) return <p className="text-sm text-neutral-500">Loading…</p>;
+  if (!report) return <LoadingState />;
 
   return (
     <div>

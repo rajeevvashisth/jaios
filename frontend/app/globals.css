@@ -16,10 +16,14 @@
   --text-secondary: #5b5b63;
   --text-tertiary: #8b8b93;
 
-  /* One accent, used sparingly — active nav, primary actions, focus. */
-  --accent: #4338ca;
+  /* One accent, used sparingly — active nav, primary actions, focus.
+     Deliberately a confident blue rather than the violet/indigo every
+     other AI product reaches for — reads as trustworthy/fintech, which
+     matters for a product that also carries finance & compliance data. */
+  --accent: #1d4ed8;
+  --accent-hover: #1a43bd;
   --accent-contrast: #ffffff;
-  --accent-soft: #eef0fd;
+  --accent-soft: #eaf0fd;
 
   --success: #0f7b52;
   --success-soft: #e6f6ef;
@@ -42,9 +46,10 @@
     --text-secondary: #a7a7b0;
     --text-tertiary: #737379;
 
-    --accent: #8b85f5;
-    --accent-contrast: #0b0b0d;
-    --accent-soft: #1c1a33;
+    --accent: #5b8def;
+    --accent-hover: #7ba3f2;
+    --accent-contrast: #06101f;
+    --accent-soft: #142238;
 
     --success: #34c98e;
     --success-soft: #0f2a20;

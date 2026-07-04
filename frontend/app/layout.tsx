@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { CompanySwitcher } from "@/components/CompanySwitcher";
 import { AuthStatus } from "@/components/AuthStatus";
 import { AuthGate } from "@/components/AuthGate";
+import { WorkspaceLabel } from "@/components/WorkspaceLabel";
 
 export const metadata: Metadata = {
   title: "JAIOS — AI Operating System",
@@ -22,12 +23,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Sidebar />
               <div className="flex flex-1 flex-col overflow-hidden">
                 <header
-                  className="flex items-center justify-end gap-4 px-6 py-3"
+                  className="flex items-center gap-4 px-6 py-3"
                   style={{
                     borderBottom: "1px solid var(--border-subtle)",
                     backgroundColor: "var(--surface)",
                   }}
                 >
+                  <WorkspaceLabel />
                   <CompanySwitcher />
                   <AuthStatus />
                 </header>

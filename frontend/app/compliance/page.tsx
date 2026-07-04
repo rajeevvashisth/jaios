@@ -6,12 +6,15 @@ import {
   api,
   type ApplicabilityStatus,
   type ComplianceObligation,
-  type ComplianceUrgency,
   type FilingStatus,
 } from "@/lib/api";
 import { useCompany } from "@/lib/company-context";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
+import { Card } from "@/components/Card";
+import { Badge, toneForUrgency } from "@/components/Badge";
+import { Button } from "@/components/Button";
+import { Input, Label, Select } from "@/components/Field";
 
 const CATEGORIES = ["tax", "legal", "trademark", "contract", "corporate", "other"];
 const OWNERS = ["finance", "legal", "operations"];
@@ -34,14 +37,6 @@ const FILING_STATUS_OPTIONS: FilingStatus[] = [
   "completed",
   "overdue",
 ];
-
-const URGENCY_STYLES: Record<ComplianceUrgency, string> = {
-  overdue: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  due_soon: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
-  upcoming: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400",
-  completed: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  review_pending: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
-};
 
 export default function CompliancePage() {
   const { activeCompanyId } = useCompany();
@@ -167,86 +162,68 @@ export default function CompliancePage() {
   }
 
   return (
-    <div>
+    <div className="max-w-5xl">
       <PageHeader
         title="Compliance"
         description="Tax, legal, trademark, and contract obligations with reminders."
       />
 
-      <div className="mb-6">
-        <button
-          onClick={handleSeedFramework}
-          disabled={seeding}
-          className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm disabled:opacity-50 dark:border-neutral-700"
-        >
+      <Card className="mb-6">
+        <Button onClick={handleSeedFramework} disabled={seeding}>
           {seeding ? "Seeding…" : "Seed standard India LLP compliance checklist"}
-        </button>
-        <p className="mt-1 text-xs text-neutral-500">
+        </Button>
+        <p className="mt-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
           Adds the common MCA/ROC, income tax, GST, trademark, and local-registration categories as
           review-pending items — nothing is marked filed or given a fabricated due date.
         </p>
-      </div>
+      </Card>
 
-      <form onSubmit={handleCreate} className="mb-6 flex flex-wrap items-end gap-3">
-        <div className="min-w-[220px] flex-1">
-          <label className="block text-xs text-neutral-500">Title</label>
-          <input
-            required
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="File quarterly GST return"
-            className="mt-1 w-full rounded-md border border-neutral-300 bg-transparent px-3 py-1.5 text-sm dark:border-neutral-700"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-neutral-500">Category</label>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="mt-1 rounded-md border border-neutral-300 bg-transparent px-2 py-1.5 text-sm dark:border-neutral-700"
-          >
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-neutral-500">Owner</label>
-          <select
-            value={ownerAgentKey}
-            onChange={(e) => setOwnerAgentKey(e.target.value)}
-            className="mt-1 rounded-md border border-neutral-300 bg-transparent px-2 py-1.5 text-sm dark:border-neutral-700"
-          >
-            {OWNERS.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-neutral-500">
-            Due date <span className="text-neutral-400">(optional)</span>
-          </label>
-          <input
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            className="mt-1 rounded-md border border-neutral-300 bg-transparent px-3 py-1.5 text-sm dark:border-neutral-700"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
-        >
-          {submitting ? "Adding…" : "Add obligation"}
-        </button>
-      </form>
+      <Card className="mb-6">
+        <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-3">
+          <div className="min-w-[220px] flex-1">
+            <Label>Title</Label>
+            <Input
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="File quarterly GST return"
+              className="w-full"
+            />
+          </div>
+          <div>
+            <Label>Category</Label>
+            <Select value={category} onChange={(e) => setCategory(e.target.value)}>
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <Label>Owner</Label>
+            <Select value={ownerAgentKey} onChange={(e) => setOwnerAgentKey(e.target.value)}>
+              {OWNERS.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <Label>Due date (optional)</Label>
+            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          </div>
+          <Button type="submit" variant="primary" disabled={submitting}>
+            {submitting ? "Adding…" : "Add obligation"}
+          </Button>
+        </form>
+      </Card>
 
-      <label className="mb-4 flex items-center gap-2 text-sm text-neutral-500">
+      <label
+        className="mb-4 flex items-center gap-2 text-sm"
+        style={{ color: "var(--text-secondary)" }}
+      >
         <input
           type="checkbox"
           checked={includeCompleted}
@@ -255,9 +232,13 @@ export default function CompliancePage() {
         Show completed
       </label>
 
-      {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
+      {error && (
+        <p className="mb-4 text-sm" style={{ color: "var(--danger)" }}>
+          {error}
+        </p>
+      )}
       {startedRunId && (
-        <p className="mb-4 text-sm text-green-600">
+        <p className="mb-4 text-sm" style={{ color: "var(--success)" }}>
           Started —{" "}
           <Link href={`/workflows/${startedRunId}`} className="underline">
             view trace
@@ -271,19 +252,14 @@ export default function CompliancePage() {
       ) : (
         <div className="space-y-2">
           {obligations.map((o) => (
-            <div
-              key={o.id}
-              className="rounded-md border border-neutral-200 p-3 text-sm dark:border-neutral-800"
-            >
+            <Card key={o.id}>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="flex flex-wrap items-center gap-2 font-medium">
+                  <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
                     {o.title}
-                    <span className={`rounded-full px-2 py-0.5 text-xs ${URGENCY_STYLES[o.urgency]}`}>
-                      {o.urgency.replace(/_/g, " ")}
-                    </span>
+                    <Badge tone={toneForUrgency(o.urgency)}>{o.urgency.replace(/_/g, " ")}</Badge>
                   </div>
-                  <div className="mt-0.5 text-xs text-neutral-500">
+                  <div className="mt-0.5 text-xs" style={{ color: "var(--text-tertiary)" }}>
                     {o.category}
                     {o.jurisdiction_level ? ` · ${o.jurisdiction_level.replace(/_/g, " ")}` : ""}
                     {o.governing_authority ? ` · ${o.governing_authority}` : ""}
@@ -293,9 +269,13 @@ export default function CompliancePage() {
                     {o.due_date ?? "TBD"}
                     {o.external_owner ? ` · external: ${o.external_owner}` : ""}
                   </div>
-                  {o.notes && <p className="mt-1 text-xs text-neutral-500">{o.notes}</p>}
+                  {o.notes && (
+                    <p className="mt-1 text-xs" style={{ color: "var(--text-tertiary)" }}>
+                      {o.notes}
+                    </p>
+                  )}
                   {o.required_documents.length > 0 && (
-                    <ul className="mt-1 text-xs text-neutral-500">
+                    <ul className="mt-1 text-xs" style={{ color: "var(--text-tertiary)" }}>
                       {o.required_documents.map((doc) => (
                         <li key={doc.name}>
                           {doc.obtained ? "✓" : "○"} {doc.name}
@@ -306,28 +286,28 @@ export default function CompliancePage() {
                 </div>
                 {!o.completed && (
                   <div className="flex shrink-0 gap-2">
-                    <button
-                      onClick={() => handleStartReview(o)}
-                      disabled={busyId === o.id}
-                      className="rounded-md border border-neutral-300 px-2 py-1 text-xs disabled:opacity-50 dark:border-neutral-700"
-                    >
+                    <Button size="sm" onClick={() => handleStartReview(o)} disabled={busyId === o.id}>
                       Start review
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="primary"
                       onClick={() => handleComplete(o.id)}
                       disabled={busyId === o.id}
-                      className="rounded-md bg-green-600 px-2 py-1 text-xs text-white disabled:opacity-50"
                     >
                       Mark complete
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
 
-              <div className="mt-2 flex flex-wrap gap-3 border-t border-neutral-100 pt-2 dark:border-neutral-800">
-                <label className="text-xs text-neutral-500">
+              <div
+                className="mt-3 flex flex-wrap gap-4 pt-3"
+                style={{ borderTop: "1px solid var(--border-subtle)" }}
+              >
+                <label className="text-xs" style={{ color: "var(--text-tertiary)" }}>
                   Applicability
-                  <select
+                  <Select
                     value={o.applicability_status}
                     disabled={busyId === o.id}
                     onChange={(e) =>
@@ -335,34 +315,34 @@ export default function CompliancePage() {
                         applicability_status: e.target.value as ApplicabilityStatus,
                       })
                     }
-                    className="ml-2 rounded-md border border-neutral-300 bg-transparent px-1.5 py-1 text-xs dark:border-neutral-700"
+                    className="ml-2"
                   >
                     {APPLICABILITY_OPTIONS.map((s) => (
                       <option key={s} value={s}>
                         {s.replace(/_/g, " ")}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
-                <label className="text-xs text-neutral-500">
+                <label className="text-xs" style={{ color: "var(--text-tertiary)" }}>
                   Filing status
-                  <select
+                  <Select
                     value={o.filing_status}
                     disabled={busyId === o.id}
                     onChange={(e) =>
                       handleFieldUpdate(o.id, { filing_status: e.target.value as FilingStatus })
                     }
-                    className="ml-2 rounded-md border border-neutral-300 bg-transparent px-1.5 py-1 text-xs dark:border-neutral-700"
+                    className="ml-2"
                   >
                     {FILING_STATUS_OPTIONS.map((s) => (
                       <option key={s} value={s}>
                         {s.replace(/_/g, " ")}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

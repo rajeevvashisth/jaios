@@ -7,6 +7,10 @@ import { formatMoney } from "@/lib/format";
 import { useCompany } from "@/lib/company-context";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
+import { Card, CardHeader } from "@/components/Card";
+import { Badge } from "@/components/Badge";
+import { Button } from "@/components/Button";
+import { Input, Label, Select } from "@/components/Field";
 
 const PAYMENT_STATUSES: PaymentStatus[] = ["paid", "unpaid", "partially_paid", "reimbursable"];
 
@@ -124,35 +128,27 @@ export default function FinancePage() {
   }
 
   return (
-    <div>
+    <div className="max-w-5xl">
       <PageHeader title="Finance" description="Revenue, cost, and margin visibility." />
 
       <div className="mb-6 flex flex-wrap items-end gap-3">
         <div>
-          <label className="block text-xs text-neutral-500">Product</label>
-          <select
-            value={productId}
-            onChange={(e) => setProductId(e.target.value)}
-            className="mt-1 rounded-md border border-neutral-300 bg-transparent px-2 py-1.5 text-sm dark:border-neutral-700"
-          >
+          <Label>Product</Label>
+          <Select value={productId} onChange={(e) => setProductId(e.target.value)}>
             <option value="">Company-wide</option>
             {products.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
-        <button
-          onClick={handleAskFinanceAgent}
-          disabled={asking || !summary}
-          className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm disabled:opacity-50 dark:border-neutral-700"
-        >
+        <Button onClick={handleAskFinanceAgent} disabled={asking || !summary}>
           {asking ? "Asking…" : "Ask Finance Agent for a narrative"}
-        </button>
+        </Button>
       </div>
       {startedRunId && (
-        <p className="mb-4 text-sm text-green-600">
+        <p className="mb-4 text-sm" style={{ color: "var(--success)" }}>
           Started —{" "}
           <Link href={`/workflows/${startedRunId}`} className="underline">
             view trace
@@ -160,185 +156,149 @@ export default function FinancePage() {
           .
         </p>
       )}
-      {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
-
-      {summary && (
-        <>
-          <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <StatCard label="Revenue" value={formatMoney(summary.revenue_cents, summary.currency)} />
-            <StatCard label="Expenses" value={formatMoney(summary.expense_cents, summary.currency)} />
-            <StatCard
-              label="Margin"
-              value={formatMoney(summary.margin_cents, summary.currency)}
-              highlight={summary.margin_cents < 0 ? "negative" : "positive"}
-            />
-          </div>
-          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <StatCard
-              label="Capital raised (equity, not income)"
-              value={formatMoney(summary.capital_cents, summary.currency)}
-            />
-          </div>
-        </>
+      {error && (
+        <p className="mb-4 text-sm" style={{ color: "var(--danger)" }}>
+          {error}
+        </p>
       )}
 
-      <form onSubmit={handleCreate} className="mb-8 flex flex-wrap items-end gap-3">
-        <div>
-          <label className="block text-xs text-neutral-500">Type</label>
-          <select
-            value={entryType}
-            onChange={(e) => setEntryType(e.target.value as "revenue" | "expense" | "capital")}
-            className="mt-1 rounded-md border border-neutral-300 bg-transparent px-2 py-1.5 text-sm dark:border-neutral-700"
-          >
-            <option value="revenue">Revenue</option>
-            <option value="expense">Expense</option>
-            <option value="capital">Capital (founder/investor contribution)</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-neutral-500">Category</label>
-          <input
-            required
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            placeholder="subscriptions"
-            className="mt-1 rounded-md border border-neutral-300 bg-transparent px-3 py-1.5 text-sm dark:border-neutral-700"
+      {summary && (
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
+          <StatCard label="Revenue" value={formatMoney(summary.revenue_cents, summary.currency)} />
+          <StatCard label="Expenses" value={formatMoney(summary.expense_cents, summary.currency)} />
+          <StatCard
+            label="Margin"
+            value={formatMoney(summary.margin_cents, summary.currency)}
+            tone={summary.margin_cents < 0 ? "danger" : "success"}
+          />
+          <StatCard
+            label="Capital raised"
+            value={formatMoney(summary.capital_cents, summary.currency)}
+            hint="Equity, not income"
           />
         </div>
-        <div>
-          <label className="block text-xs text-neutral-500">
-            Subcategory <span className="text-neutral-400">(optional)</span>
-          </label>
-          <input
-            value={subcategory}
-            onChange={(e) => setSubcategory(e.target.value)}
-            placeholder="hosting"
-            className="mt-1 rounded-md border border-neutral-300 bg-transparent px-3 py-1.5 text-sm dark:border-neutral-700"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-neutral-500">Amount</label>
-          <input
-            required
-            type="number"
-            step="0.01"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="1000.00"
-            className="mt-1 w-32 rounded-md border border-neutral-300 bg-transparent px-3 py-1.5 text-sm dark:border-neutral-700"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-neutral-500">Date</label>
-          <input
-            required
-            type="date"
-            value={occurredOn}
-            onChange={(e) => setOccurredOn(e.target.value)}
-            className="mt-1 rounded-md border border-neutral-300 bg-transparent px-3 py-1.5 text-sm dark:border-neutral-700"
-          />
-        </div>
-        <div className="min-w-[200px] flex-1">
-          <label className="block text-xs text-neutral-500">Description</label>
-          <input
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="mt-1 w-full rounded-md border border-neutral-300 bg-transparent px-3 py-1.5 text-sm dark:border-neutral-700"
-          />
-        </div>
-        {entryType === "expense" && (
-          <>
-            <div>
-              <label className="block text-xs text-neutral-500">
-                Vendor <span className="text-neutral-400">(optional)</span>
-              </label>
-              <input
-                value={vendor}
-                onChange={(e) => setVendor(e.target.value)}
-                className="mt-1 rounded-md border border-neutral-300 bg-transparent px-3 py-1.5 text-sm dark:border-neutral-700"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-neutral-500">Payment status</label>
-              <select
-                value={paymentStatus}
-                onChange={(e) => setPaymentStatus(e.target.value as PaymentStatus)}
-                className="mt-1 rounded-md border border-neutral-300 bg-transparent px-2 py-1.5 text-sm dark:border-neutral-700"
-              >
-                {PAYMENT_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s.replace(/_/g, " ")}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs text-neutral-500">
-                Payment method <span className="text-neutral-400">(optional)</span>
-              </label>
-              <input
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                placeholder="bank transfer"
-                className="mt-1 rounded-md border border-neutral-300 bg-transparent px-3 py-1.5 text-sm dark:border-neutral-700"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-neutral-500">
-                Proof / invoice ref <span className="text-neutral-400">(optional)</span>
-              </label>
-              <input
-                value={proofReference}
-                onChange={(e) => setProofReference(e.target.value)}
-                placeholder="invoice #, file link, etc."
-                className="mt-1 rounded-md border border-neutral-300 bg-transparent px-3 py-1.5 text-sm dark:border-neutral-700"
-              />
-            </div>
-          </>
-        )}
-        <button
-          type="submit"
-          disabled={submitting}
-          className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
-        >
-          {submitting ? "Adding…" : "Add entry"}
-        </button>
-      </form>
+      )}
 
+      <Card className="mb-6">
+        <CardHeader title="Add an entry" />
+        <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-3">
+          <div>
+            <Label>Type</Label>
+            <Select
+              value={entryType}
+              onChange={(e) => setEntryType(e.target.value as "revenue" | "expense" | "capital")}
+            >
+              <option value="revenue">Revenue</option>
+              <option value="expense">Expense</option>
+              <option value="capital">Capital (founder/investor contribution)</option>
+            </Select>
+          </div>
+          <div>
+            <Label>Category</Label>
+            <Input required value={category} onChange={(e) => setCategory(e.target.value)} placeholder="subscriptions" />
+          </div>
+          <div>
+            <Label>Subcategory (optional)</Label>
+            <Input value={subcategory} onChange={(e) => setSubcategory(e.target.value)} placeholder="hosting" />
+          </div>
+          <div>
+            <Label>Amount</Label>
+            <Input
+              required
+              type="number"
+              step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="1000.00"
+              className="w-32"
+            />
+          </div>
+          <div>
+            <Label>Date</Label>
+            <Input required type="date" value={occurredOn} onChange={(e) => setOccurredOn(e.target.value)} />
+          </div>
+          <div className="min-w-[200px] flex-1">
+            <Label>Description</Label>
+            <Input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          {entryType === "expense" && (
+            <>
+              <div>
+                <Label>Vendor (optional)</Label>
+                <Input value={vendor} onChange={(e) => setVendor(e.target.value)} />
+              </div>
+              <div>
+                <Label>Payment status</Label>
+                <Select value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value as PaymentStatus)}>
+                  {PAYMENT_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {s.replace(/_/g, " ")}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <Label>Payment method (optional)</Label>
+                <Input
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  placeholder="bank transfer"
+                />
+              </div>
+              <div>
+                <Label>Proof / invoice ref (optional)</Label>
+                <Input
+                  value={proofReference}
+                  onChange={(e) => setProofReference(e.target.value)}
+                  placeholder="invoice #, file link, etc."
+                />
+              </div>
+            </>
+          )}
+          <Button type="submit" variant="primary" disabled={submitting}>
+            {submitting ? "Adding…" : "Add entry"}
+          </Button>
+        </form>
+      </Card>
+
+      <CardHeader title="Ledger" />
       {entries.length === 0 ? (
         <EmptyState message="No finance entries yet." />
       ) : (
-        <table className="w-full text-left text-sm">
-          <thead className="text-neutral-500">
-            <tr>
-              <th className="pb-2">Date</th>
-              <th className="pb-2">Type</th>
-              <th className="pb-2">Category</th>
-              <th className="pb-2">Amount</th>
-              <th className="pb-2">Vendor</th>
-              <th className="pb-2">Payment</th>
-              <th className="pb-2">Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((entry) => (
-              <tr key={entry.id} className="border-t border-neutral-200 dark:border-neutral-800">
-                <td className="py-2">{entry.occurred_on}</td>
-                <td className="py-2">
-                  {entry.entry_type}
-                  {entry.subcategory ? ` · ${entry.subcategory}` : ""}
-                </td>
-                <td className="py-2">{entry.category}</td>
-                <td className="py-2">{formatMoney(entry.amount_cents, entry.currency)}</td>
-                <td className="py-2">{entry.vendor ?? "—"}</td>
-                <td className="py-2 text-xs">
-                  {entry.entry_type === "expense" ? entry.payment_status.replace(/_/g, " ") : "—"}
-                </td>
-                <td className="py-2">{entry.description ?? "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="space-y-2">
+          {entries.map((entry) => (
+            <Card key={entry.id} className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  {entry.category}
+                  {entry.subcategory && (
+                    <span className="font-normal" style={{ color: "var(--text-tertiary)" }}>
+                      · {entry.subcategory}
+                    </span>
+                  )}
+                  <Badge tone={entry.entry_type === "expense" ? "warning" : entry.entry_type === "capital" ? "accent" : "success"}>
+                    {entry.entry_type}
+                  </Badge>
+                  {entry.entry_type === "expense" && (
+                    <Badge tone={entry.payment_status === "paid" ? "success" : "neutral"}>
+                      {entry.payment_status.replace(/_/g, " ")}
+                    </Badge>
+                  )}
+                </div>
+                <div className="mt-0.5 text-xs" style={{ color: "var(--text-tertiary)" }}>
+                  {entry.occurred_on}
+                  {entry.vendor ? ` · ${entry.vendor}` : ""}
+                  {entry.description ? ` · ${entry.description}` : ""}
+                </div>
+              </div>
+              <div className="text-sm font-semibold">{formatMoney(entry.amount_cents, entry.currency)}</div>
+            </Card>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -347,26 +307,27 @@ export default function FinancePage() {
 function StatCard({
   label,
   value,
-  highlight,
+  tone,
+  hint,
 }: {
   label: string;
   value: string;
-  highlight?: "positive" | "negative";
+  tone?: "success" | "danger";
+  hint?: string;
 }) {
   return (
-    <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-      <div className="text-sm text-neutral-500">{label}</div>
-      <div
-        className={`mt-1 text-2xl font-semibold ${
-          highlight === "negative"
-            ? "text-red-600"
-            : highlight === "positive"
-              ? "text-green-600"
-              : ""
-        }`}
-      >
+    <Card>
+      <div className="text-sm" style={{ color: "var(--text-tertiary)" }}>
+        {label}
+      </div>
+      <div className="mt-1 text-2xl font-semibold" style={tone ? { color: `var(--${tone})` } : undefined}>
         {value}
       </div>
-    </div>
+      {hint && (
+        <div className="mt-0.5 text-xs" style={{ color: "var(--text-tertiary)" }}>
+          {hint}
+        </div>
+      )}
+    </Card>
   );
 }

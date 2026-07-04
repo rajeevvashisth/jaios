@@ -7,6 +7,7 @@ import { api, type ApprovalRequest, type WorkflowRun, type WorkflowStep } from "
 import { useAuth } from "@/lib/auth-context";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
+import { LoadingState } from "@/components/Spinner";
 
 export default function WorkflowRunDetailPage() {
   const params = useParams<{ runId: string }>();
@@ -67,7 +68,7 @@ export default function WorkflowRunDetailPage() {
     );
   }
 
-  if (!run) return <p className="text-sm text-neutral-500">Loading…</p>;
+  if (!run) return <LoadingState />;
 
   return (
     <div>

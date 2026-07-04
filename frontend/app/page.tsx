@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { Card, CardHeader } from "@/components/Card";
 import { Badge } from "@/components/Badge";
+import { LoadingState } from "@/components/Spinner";
 
 export default function CommandCenterPage() {
   const { activeCompanyId, companies } = useCompany();
@@ -60,7 +61,7 @@ export default function CommandCenterPage() {
     );
   }
 
-  if (!summary) return <p style={{ color: "var(--text-tertiary)" }}>Loading…</p>;
+  if (!summary) return <LoadingState />;
 
   const attentionItems = buildAttentionItems(summary);
 
