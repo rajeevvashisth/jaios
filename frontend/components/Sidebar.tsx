@@ -2,42 +2,57 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  Boxes,
+  Brain,
+  Calculator,
+  Cog,
+  Cpu,
+  FolderKanban,
+  Gauge,
+  ListTodo,
+  ScrollText,
+  ShieldCheck,
+  Sparkles,
+  Workflow,
+  type LucideIcon,
+} from "lucide-react";
 
-const NAV_SECTIONS: { label: string; items: { href: string; label: string }[] }[] = [
+const NAV_SECTIONS: { label: string; items: { href: string; label: string; icon: LucideIcon }[] }[] = [
   {
     label: "",
-    items: [{ href: "/", label: "Command Center" }],
+    items: [{ href: "/", label: "Command Center", icon: Gauge }],
   },
   {
     label: "Business",
     items: [
-      { href: "/products", label: "Products" },
-      { href: "/projects", label: "Projects" },
-      { href: "/tasks", label: "Tasks" },
-      { href: "/workflows", label: "Workflows" },
+      { href: "/products", label: "Products", icon: Boxes },
+      { href: "/projects", label: "Projects", icon: FolderKanban },
+      { href: "/tasks", label: "Tasks", icon: ListTodo },
+      { href: "/workflows", label: "Workflows", icon: Workflow },
     ],
   },
   {
     label: "Finance & Compliance",
     items: [
-      { href: "/finance", label: "Finance" },
-      { href: "/compliance", label: "Compliance" },
+      { href: "/finance", label: "Finance", icon: Calculator },
+      { href: "/compliance", label: "Compliance", icon: ShieldCheck },
     ],
   },
   {
     label: "Knowledge & AI",
     items: [
-      { href: "/knowledge", label: "Knowledge" },
-      { href: "/memory", label: "Memory / Activity" },
-      { href: "/agents", label: "Agents" },
-      { href: "/ai", label: "AI Settings" },
+      { href: "/knowledge", label: "Knowledge", icon: Brain },
+      { href: "/memory", label: "Memory / Activity", icon: ScrollText },
+      { href: "/agents", label: "Agents", icon: Cpu },
+      { href: "/ai", label: "AI Settings", icon: Sparkles },
     ],
   },
   {
     label: "System",
     items: [
-      { href: "/logs", label: "Logs / Traces" },
-      { href: "/settings", label: "Settings" },
+      { href: "/logs", label: "Logs / Traces", icon: ScrollText },
+      { href: "/settings", label: "Settings", icon: Cog },
     ],
   },
 ];
@@ -52,12 +67,15 @@ export function Sidebar() {
     >
       <Link href="/" className="mb-1 flex items-center gap-2 px-2">
         <span
-          className="flex h-6 w-6 items-center justify-center rounded-md text-xs font-bold"
-          style={{ backgroundColor: "var(--accent)", color: "var(--accent-contrast)" }}
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold"
+          style={{
+            background: "linear-gradient(135deg, var(--accent), var(--accent-hover))",
+            color: "var(--accent-contrast)",
+          }}
         >
           J
         </span>
-        <span className="text-base font-semibold tracking-tight">JAIOS</span>
+        <span className="font-heading text-base font-semibold tracking-tight">JAIOS</span>
       </Link>
 
       {NAV_SECTIONS.map((section) => (
@@ -75,17 +93,19 @@ export function Sidebar() {
               const active =
                 pathname === item.href ||
                 (item.href !== "/" && pathname?.startsWith(`${item.href}/`));
+              const Icon = item.icon;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="relative rounded-md px-2 py-1.5 text-sm transition-colors"
+                  className="relative flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors"
                   style={
                     active
                       ? { backgroundColor: "var(--accent-soft)", color: "var(--accent)" }
                       : { color: "var(--text-secondary)" }
                   }
                 >
+                  <Icon size={16} strokeWidth={2} className="shrink-0" />
                   {item.label}
                 </Link>
               );

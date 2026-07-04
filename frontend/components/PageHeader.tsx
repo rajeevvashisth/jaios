@@ -1,8 +1,12 @@
 export function PageHeader({ title, description }: { title: string; description?: string }) {
   return (
-    <div className="mb-6">
-      <h1 className="text-xl font-semibold">{title}</h1>
-      {description && <p className="mt-1 text-sm text-neutral-500">{description}</p>}
+    <div className="mb-7">
+      <h1 className="font-heading text-2xl font-semibold tracking-tight">{title}</h1>
+      {description && (
+        <p className="mt-1.5 text-sm" style={{ color: "var(--text-secondary)" }}>
+          {description}
+        </p>
+      )}
     </div>
   );
 }

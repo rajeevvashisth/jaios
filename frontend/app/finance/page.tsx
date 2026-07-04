@@ -295,7 +295,9 @@ export default function FinancePage() {
                   {entry.description ? ` · ${entry.description}` : ""}
                 </div>
               </div>
-              <div className="text-sm font-semibold">{formatMoney(entry.amount_cents, entry.currency)}</div>
+              <div className="font-mono text-sm font-semibold">
+                {formatMoney(entry.amount_cents, entry.currency)}
+              </div>
             </Card>
           ))}
         </div>
@@ -320,7 +322,7 @@ function StatCard({
       <div className="text-sm" style={{ color: "var(--text-tertiary)" }}>
         {label}
       </div>
-      <div className="mt-1 text-2xl font-semibold" style={tone ? { color: `var(--${tone})` } : undefined}>
+      <div className="mt-1 font-mono text-2xl font-semibold" style={tone ? { color: `var(--${tone})` } : undefined}>
         {value}
       </div>
       {hint && (

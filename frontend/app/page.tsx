@@ -2,6 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import {
+  AlertTriangle,
+  Boxes,
+  CircleCheck,
+  Clock,
+  ListChecks,
+  PlusCircle,
+  Sparkles,
+  Workflow,
+  type LucideIcon,
+} from "lucide-react";
 import { api, type AIUsageSummary, type CeoSummary } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import { useCompany } from "@/lib/company-context";
@@ -84,7 +95,8 @@ export default function CommandCenterPage() {
           }
         />
         {attentionItems.length === 0 ? (
-          <Card>
+          <Card className="flex items-center gap-2">
+            <CircleCheck size={18} style={{ color: "var(--success)" }} />
             <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
               All clear — nothing overdue, blocked, or waiting on your approval.
             </p>
@@ -92,21 +104,25 @@ export default function CommandCenterPage() {
         ) : (
           <div className="space-y-2">
             {attentionItems.map((item) => (
-              <Card key={item.key} className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    {item.title}
-                    <Badge tone={item.tone}>{item.badge}</Badge>
+              <Card
+                key={item.key}
+                className="flex items-center justify-between"
+                style={{ borderLeft: `3px solid var(--${item.tone})` }}
+              >
+                <div className="flex items-center gap-3">
+                  <item.icon size={17} style={{ color: `var(--${item.tone})` }} className="shrink-0" />
+                  <div>
+                    <div className="text-sm font-medium">{item.title}</div>
+                    {item.detail && (
+                      <div className="mt-0.5 text-xs" style={{ color: "var(--text-tertiary)" }}>
+                        {item.detail}
+                      </div>
+                    )}
                   </div>
-                  {item.detail && (
-                    <div className="mt-0.5 text-xs" style={{ color: "var(--text-tertiary)" }}>
-                      {item.detail}
-                    </div>
-                  )}
                 </div>
                 <Link
                   href={item.href}
-                  className="text-xs font-medium"
+                  className="shrink-0 text-xs font-medium"
                   style={{ color: "var(--accent)" }}
                 >
                   View →
@@ -118,10 +134,10 @@ export default function CommandCenterPage() {
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <StatCard label="Products" value={summary.portfolio.length} />
-        <StatCard label="Open tasks" value={summary.operations.open_tasks} />
-        <StatCard label="Active workflow runs" value={summary.operations.active_workflow_runs} />
-        <StatCard label="Pending approvals" value={summary.operations.pending_approvals} />
+        <StatCard icon={Boxes} label="Products" value={summary.portfolio.length} />
+        <StatCard icon={ListChecks} label="Open tasks" value={summary.operations.open_tasks} />
+        <StatCard icon={Workflow} label="Active workflow runs" value={summary.operations.active_workflow_runs} />
+        <StatCard icon={Clock} label="Pending approvals" value={summary.operations.pending_approvals} />
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -197,7 +213,7 @@ export default function CommandCenterPage() {
                       </div>
                     </div>
                     <Badge tone={p.task_counts.blocked > 0 ? "warning" : "neutral"}>
-                      {openWork} open
+                      <span className="font-mono">{openWork}</span>&nbsp;open
                     </Badge>
                   </Link>
                 );
@@ -234,10 +250,10 @@ export default function CommandCenterPage() {
 
 function QuickActions() {
   const actions = [
-    { href: "/workflows", label: "Start a workflow" },
-    { href: "/finance", label: "Add an expense" },
-    { href: "/compliance", label: "Add compliance item" },
-    { href: "/tasks", label: "Add a task" },
+    { href: "/workflows", label: "Start a workflow", icon: Sparkles },
+    { href: "/finance", label: "Add an expense", icon: PlusCircle },
+    { href: "/compliance", label: "Add compliance item", icon: PlusCircle },
+    { href: "/tasks", label: "Add a task", icon: PlusCircle },
   ];
   return (
     <div className="mb-6 flex flex-wrap gap-2">
@@ -245,12 +261,13 @@ function QuickActions() {
         <Link
           key={a.href}
           href={a.href}
-          className="rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+          className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
           style={{
             backgroundColor: "var(--accent-soft)",
             color: "var(--accent)",
           }}
         >
+          <a.icon size={13} />
           {a.label}
         </Link>
       ))}
@@ -263,7 +280,7 @@ type AttentionItem = {
   title: string;
   detail?: string;
   href: string;
-  badge: string;
+  icon: LucideIcon;
   tone: "danger" | "warning" | "accent";
 };
 
@@ -275,7 +292,7 @@ function buildAttentionItems(summary: CeoSummary): AttentionItem[] {
       key: "approvals",
       title: `${summary.operations.pending_approvals} workflow approval${summary.operations.pending_approvals === 1 ? "" : "s"} waiting on you`,
       href: "/workflows",
-      badge: "approval",
+      icon: Clock,
       tone: "accent",
     });
   }
@@ -285,7 +302,7 @@ function buildAttentionItems(summary: CeoSummary): AttentionItem[] {
       key: "overdue-tasks",
       title: `${summary.operations.overdue_tasks} task${summary.operations.overdue_tasks === 1 ? "" : "s"} overdue`,
       href: "/tasks",
-      badge: "overdue",
+      icon: AlertTriangle,
       tone: "danger",
     });
   }
@@ -295,7 +312,7 @@ function buildAttentionItems(summary: CeoSummary): AttentionItem[] {
       key: "blocked-tasks",
       title: `${summary.operations.blocked_tasks} task${summary.operations.blocked_tasks === 1 ? "" : "s"} blocked`,
       href: "/tasks",
-      badge: "blocked",
+      icon: AlertTriangle,
       tone: "warning",
     });
   }
@@ -306,7 +323,7 @@ function buildAttentionItems(summary: CeoSummary): AttentionItem[] {
       title: o.title,
       detail: `Compliance · due ${o.due_date ?? "unknown"}`,
       href: "/compliance",
-      badge: "overdue",
+      icon: AlertTriangle,
       tone: "danger",
     });
   }
@@ -314,13 +331,14 @@ function buildAttentionItems(summary: CeoSummary): AttentionItem[] {
   return items;
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function StatCard({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: number }) {
   return (
     <Card>
-      <div className="text-sm" style={{ color: "var(--text-tertiary)" }}>
+      <div className="flex items-center gap-1.5 text-sm" style={{ color: "var(--text-tertiary)" }}>
+        <Icon size={14} />
         {label}
       </div>
-      <div className="mt-1 text-2xl font-semibold">{value}</div>
+      <div className="mt-1.5 font-mono text-2xl font-semibold">{value}</div>
     </Card>
   );
 }
@@ -340,7 +358,7 @@ function MiniStat({
         {label}
       </div>
       <div
-        className="mt-0.5 text-lg font-semibold"
+        className="mt-0.5 font-mono text-lg font-semibold"
         style={tone ? { color: `var(--${tone})` } : undefined}
       >
         {value}

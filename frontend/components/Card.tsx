@@ -1,15 +1,21 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 export function Card({
   children,
   className = "",
   padded = true,
+  style,
 }: {
   children: ReactNode;
   className?: string;
   padded?: boolean;
+  style?: CSSProperties;
 }) {
-  return <div className={`jaios-card ${padded ? "p-4" : ""} ${className}`}>{children}</div>;
+  return (
+    <div className={`jaios-card ${padded ? "p-4" : ""} ${className}`} style={style}>
+      {children}
+    </div>
+  );
 }
 
 export function CardHeader({
@@ -24,7 +30,7 @@ export function CardHeader({
   return (
     <div className="mb-3 flex items-start justify-between gap-3">
       <div>
-        <h2 className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
+        <h2 className="font-heading text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
           {title}
         </h2>
         {description && (
