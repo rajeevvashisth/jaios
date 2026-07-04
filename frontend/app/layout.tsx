@@ -8,8 +8,8 @@ import { AuthStatus } from "@/components/AuthStatus";
 import { AuthGate } from "@/components/AuthGate";
 
 export const metadata: Metadata = {
-  title: "JAIOS — Jyka AI Operating System",
-  description: "Company-wide agentic operating system for Jyka Labs",
+  title: "JAIOS — AI Operating System",
+  description: "An AI operating system for running a company — Jyka Labs LLP's first workspace",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -18,10 +18,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <CompanyProvider>
           <AuthProvider>
-            <div className="flex h-screen">
+            <div className="flex h-screen" style={{ backgroundColor: "var(--surface-sunken)" }}>
               <Sidebar />
               <div className="flex flex-1 flex-col overflow-hidden">
-                <header className="flex items-center justify-end gap-4 border-b border-neutral-200 px-6 py-3 dark:border-neutral-800">
+                <header
+                  className="flex items-center justify-end gap-4 px-6 py-3"
+                  style={{
+                    borderBottom: "1px solid var(--border-subtle)",
+                    backgroundColor: "var(--surface)",
+                  }}
+                >
                   <CompanySwitcher />
                   <AuthStatus />
                 </header>
