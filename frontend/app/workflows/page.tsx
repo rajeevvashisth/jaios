@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { api, type ApprovalRequest, type WorkflowRun } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { useCompany } from "@/lib/company-context";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 
 export default function WorkflowsPage() {
   const { activeCompanyId } = useCompany();
+  const { user } = useAuth();
   const [graphs, setGraphs] = useState<string[]>([]);
   const [runs, setRuns] = useState<WorkflowRun[]>([]);
   const [approvals, setApprovals] = useState<ApprovalRequest[]>([]);
@@ -17,6 +19,7 @@ export default function WorkflowsPage() {
   const [workspacePath, setWorkspacePath] = useState("");
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [decidingId, setDecidingId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!activeCompanyId) return;
@@ -61,8 +64,16 @@ export default function WorkflowsPage() {
   }
 
   async function handleDecision(runId: string, approve: boolean) {
-    await api.workflows.decide(runId, { approve });
-    await refresh();
+    setDecidingId(runId);
+    setError(null);
+    try {
+      await api.workflows.decide(runId, { approve });
+      await refresh();
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setDecidingId(null);
+    }
   }
 
   if (!activeCompanyId) {
@@ -127,6 +138,14 @@ export default function WorkflowsPage() {
       {approvals.length > 0 && (
         <div className="mb-8">
           <h2 className="mb-2 text-sm font-medium">Pending approvals</h2>
+          {!user && (
+            <p className="mb-2 text-sm text-neutral-500">
+              <Link href="/login" className="underline">
+                Sign in
+              </Link>{" "}
+              as an admin or member to approve or reject these.
+            </p>
+          )}
           <div className="space-y-2">
             {approvals.map((a) => (
               <div
@@ -142,13 +161,15 @@ export default function WorkflowsPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleDecision(a.workflow_run_id, true)}
-                    className="rounded-md bg-green-600 px-3 py-1 text-xs text-white"
+                    disabled={!user || decidingId === a.workflow_run_id}
+                    className="rounded-md bg-green-600 px-3 py-1 text-xs text-white disabled:opacity-50"
                   >
                     Approve
                   </button>
                   <button
                     onClick={() => handleDecision(a.workflow_run_id, false)}
-                    className="rounded-md bg-red-600 px-3 py-1 text-xs text-white"
+                    disabled={!user || decidingId === a.workflow_run_id}
+                    className="rounded-md bg-red-600 px-3 py-1 text-xs text-white disabled:opacity-50"
                   >
                     Reject
                   </button>

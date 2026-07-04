@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { api, type ApprovalRequest, type WorkflowRun, type WorkflowStep } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 
 export default function WorkflowRunDetailPage() {
   const params = useParams<{ runId: string }>();
   const runId = params.runId;
+  const { user } = useAuth();
 
   const [run, setRun] = useState<WorkflowRun | null>(null);
   const [steps, setSteps] = useState<WorkflowStep[]>([]);
@@ -72,29 +74,40 @@ export default function WorkflowRunDetailPage() {
       />
 
       {pendingApproval && (
-        <div className="mb-8 flex items-center justify-between rounded-md border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
-          <div>
-            <div className="font-medium">{pendingApproval.summary}</div>
-            <div className="text-xs text-neutral-500">
-              {pendingApproval.action_type} · requested by {pendingApproval.requested_by_agent_key}
+        <div className="mb-8 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-medium">{pendingApproval.summary}</div>
+              <div className="text-xs text-neutral-500">
+                {pendingApproval.action_type} · requested by{" "}
+                {pendingApproval.requested_by_agent_key}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleDecision(true)}
+                disabled={!user || deciding}
+                className="rounded-md bg-green-600 px-3 py-1 text-xs text-white disabled:opacity-50"
+              >
+                Approve
+              </button>
+              <button
+                onClick={() => handleDecision(false)}
+                disabled={!user || deciding}
+                className="rounded-md bg-red-600 px-3 py-1 text-xs text-white disabled:opacity-50"
+              >
+                Reject
+              </button>
             </div>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleDecision(true)}
-              disabled={deciding}
-              className="rounded-md bg-green-600 px-3 py-1 text-xs text-white disabled:opacity-50"
-            >
-              Approve
-            </button>
-            <button
-              onClick={() => handleDecision(false)}
-              disabled={deciding}
-              className="rounded-md bg-red-600 px-3 py-1 text-xs text-white disabled:opacity-50"
-            >
-              Reject
-            </button>
-          </div>
+          {!user && (
+            <p className="mt-2 text-sm text-neutral-500">
+              <Link href="/login" className="underline">
+                Sign in
+              </Link>{" "}
+              as an admin or member to approve or reject this.
+            </p>
+          )}
         </div>
       )}
 
