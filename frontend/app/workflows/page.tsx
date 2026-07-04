@@ -25,7 +25,7 @@ export default function WorkflowsPage() {
     if (!activeCompanyId) return;
     const [r, a] = await Promise.all([
       api.workflows.list(activeCompanyId),
-      api.workflows.pendingApprovals(),
+      api.workflows.pendingApprovals(activeCompanyId),
     ]);
     setRuns(r);
     setApprovals(a);
@@ -68,10 +68,17 @@ export default function WorkflowsPage() {
     setError(null);
     try {
       await api.workflows.decide(runId, { approve });
-      await refresh();
     } catch (err) {
-      setError(String(err));
+      const message = String(err);
+      // A 400 here almost always means someone (or another tab) already
+      // decided this approval and the run moved on — the card is stale,
+      // not a real failure, so just drop it via refresh rather than
+      // surfacing a scary raw error.
+      if (!message.includes("(400)")) {
+        setError(message);
+      }
     } finally {
+      await refresh();
       setDecidingId(null);
     }
   }

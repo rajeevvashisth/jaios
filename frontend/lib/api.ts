@@ -356,7 +356,10 @@ export const api = {
       request<WorkflowRun[]>(`/workflows${companyId ? `?company_id=${companyId}` : ""}`),
     get: (runId: string) => request<WorkflowRun>(`/workflows/${runId}`),
     steps: (runId: string) => request<WorkflowStep[]>(`/workflows/${runId}/steps`),
-    pendingApprovals: () => request<ApprovalRequest[]>("/workflows/approvals/pending"),
+    pendingApprovals: (companyId?: string) =>
+      request<ApprovalRequest[]>(
+        `/workflows/approvals/pending${companyId ? `?company_id=${companyId}` : ""}`,
+      ),
     start: (payload: {
       graph_name: string;
       company_id: string;

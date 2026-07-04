@@ -69,8 +69,13 @@ def get_run_steps(run_id: str, db: Session = Depends(get_db)) -> list[WorkflowSt
 
 
 @router.get("/approvals/pending", response_model=list[ApprovalRequestRead])
-def list_pending_approvals(db: Session = Depends(get_db)) -> list[ApprovalRequest]:
-    return list(db.query(ApprovalRequest).filter(ApprovalRequest.status == "pending").all())
+def list_pending_approvals(
+    company_id: str | None = None, db: Session = Depends(get_db)
+) -> list[ApprovalRequest]:
+    query = db.query(ApprovalRequest).filter(ApprovalRequest.status == "pending")
+    if company_id:
+        query = query.join(WorkflowRun).filter(WorkflowRun.company_id == company_id)
+    return list(query.all())
 
 
 @router.post("/{run_id}/approve", response_model=WorkflowRunRead)

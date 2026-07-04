@@ -42,10 +42,16 @@ export default function WorkflowRunDetailPage() {
     setDeciding(true);
     try {
       await api.workflows.decide(runId, { approve });
-      await refresh();
     } catch (err) {
-      setError(String(err));
+      const message = String(err);
+      // A 400 here almost always means this approval was already decided
+      // (e.g. another tab, or a stale card) — the refresh below will drop
+      // it, so don't blow away the page with the full-page error view.
+      if (!message.includes("(400)")) {
+        setError(message);
+      }
     } finally {
+      await refresh();
       setDeciding(false);
     }
   }
