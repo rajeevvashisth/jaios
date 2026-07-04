@@ -9,7 +9,7 @@ from app.core.security import decode_access_token
 from app.db.session import get_db
 from app.models.user import User
 
-__all__ = ["get_db", "get_current_user", "require_role"]
+__all__ = ["get_db", "get_current_user", "require_role", "require_own_company"]
 
 _bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -51,3 +51,16 @@ def require_role(*roles: str) -> Callable[[User], User]:
         return current_user
 
     return dependency
+
+
+def require_own_company(current_user: User, company_id: str) -> None:
+    """Raise 403 unless ``company_id`` matches the authenticated user's own
+    company. Use this for endpoints that take a ``company_id`` directly as a
+    known, explicit parameter (list/create). For endpoints that load a
+    specific resource by id instead, check the loaded row's ``company_id``
+    and raise 404 (not 403) so a guessed id from another tenant doesn't even
+    confirm the resource exists."""
+    if company_id != current_user.company_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for this company"
+        )

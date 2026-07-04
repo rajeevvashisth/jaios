@@ -5,6 +5,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { Sidebar } from "@/components/Sidebar";
 import { CompanySwitcher } from "@/components/CompanySwitcher";
 import { AuthStatus } from "@/components/AuthStatus";
+import { AuthGate } from "@/components/AuthGate";
 
 export const metadata: Metadata = {
   title: "JAIOS — Jyka AI Operating System",
@@ -24,7 +25,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <CompanySwitcher />
                   <AuthStatus />
                 </header>
-                <main className="flex-1 overflow-y-auto p-6">{children}</main>
+                <main className="flex-1 overflow-y-auto p-6">
+                  <AuthGate>{children}</AuthGate>
+                </main>
               </div>
             </div>
           </AuthProvider>

@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
+from app.api.deps import get_current_user, get_db, require_role
 from app.models.agent import AgentDefinition
+from app.models.user import User
 from app.schemas.agent import AgentDefinitionUpdate, AgentSpecRead
 from app.services.agent_service import list_agents_with_runtime_state
 
@@ -10,13 +11,22 @@ router = APIRouter(prefix="/agents", tags=["agents"])
 
 
 @router.get("", response_model=list[AgentSpecRead])
-def list_agents(db: Session = Depends(get_db)) -> list[AgentSpecRead]:
+def list_agents(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> list[AgentSpecRead]:
     return list_agents_with_runtime_state(db)
 
 
 @router.patch("/{agent_key}", response_model=AgentSpecRead)
 def update_agent_runtime_state(
-    agent_key: str, payload: AgentDefinitionUpdate, db: Session = Depends(get_db)
+    agent_key: str,
+    payload: AgentDefinitionUpdate,
+    # The agent registry is global (shared across every company on this
+    # JAIOS instance), not per-tenant data — so there's no company to check
+    # ownership against. Restricting to admin is the floor for a mutation
+    # with that blast radius.
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db),
 ) -> AgentSpecRead:
     runtime = db.get(AgentDefinition, agent_key)
     if runtime is None:

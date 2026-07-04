@@ -38,8 +38,17 @@ export default function SettingsPage() {
     setError(null);
     try {
       const created = await api.companies.create({ name, mission: mission || undefined });
-      await refreshCompanies();
+      // Set this before refreshing the list: GET /companies now requires
+      // auth (it only returns the caller's own company), so before
+      // sign-in that refresh will fail — but we already have the created
+      // company's id directly from the create response and shouldn't lose
+      // it just because the switcher couldn't repopulate yet.
       setActiveCompanyId(created.id);
+      try {
+        await refreshCompanies();
+      } catch {
+        // Not signed in yet — the switcher will populate after login.
+      }
       setName("");
       setMission("");
     } catch (err) {

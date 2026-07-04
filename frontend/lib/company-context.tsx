@@ -28,13 +28,18 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     (async () => {
+      const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
       try {
         const list = await refreshCompanies();
-        const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
         const stillExists = stored && list.some((c) => c.id === stored);
-        setActiveCompanyIdState(stillExists ? stored : (list[0]?.id ?? null));
+        setActiveCompanyIdState(stillExists ? stored : (list[0]?.id ?? stored ?? null));
       } catch {
-        // Backend not reachable yet — pages render their own empty states.
+        // GET /companies requires auth (it only ever returns the caller's
+        // own company) — before sign-in, or if the backend isn't reachable
+        // yet, fall back to whatever was last remembered locally so the
+        // login/register flow (which needs a company_id to register
+        // against) still works without a fetched company list.
+        setActiveCompanyIdState(stored);
       } finally {
         setLoading(false);
       }
