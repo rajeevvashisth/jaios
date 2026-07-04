@@ -24,8 +24,14 @@ export default function TasksPage() {
 
   const refresh = useCallback(() => {
     if (!activeCompanyId) return;
-    api.tasks.list(activeCompanyId).then(setTasks);
-    api.projects.list(activeCompanyId).then(setProjects);
+    api.tasks
+      .list(activeCompanyId)
+      .then(setTasks)
+      .catch((e) => setError(String(e)));
+    api.projects
+      .list(activeCompanyId)
+      .then(setProjects)
+      .catch((e) => setError(String(e)));
   }, [activeCompanyId]);
 
   useEffect(() => {

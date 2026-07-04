@@ -23,7 +23,10 @@ export default function ProductsPage() {
 
   const refresh = useCallback(() => {
     if (!activeCompanyId) return;
-    api.products.list(activeCompanyId).then(setProducts);
+    api.products
+      .list(activeCompanyId)
+      .then(setProducts)
+      .catch((e) => setError(String(e)));
   }, [activeCompanyId]);
 
   useEffect(() => {

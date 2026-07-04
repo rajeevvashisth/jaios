@@ -13,6 +13,7 @@ export default function KnowledgePage() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<KnowledgeSearchResult[]>([]);
   const [status, setStatus] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   async function handleIngest(e: React.FormEvent) {
     e.preventDefault();
@@ -36,8 +37,13 @@ export default function KnowledgePage() {
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     if (!activeCompanyId) return;
-    const found = await api.knowledge.search({ company_id: activeCompanyId, query });
-    setResults(found);
+    setSearchError(null);
+    try {
+      const found = await api.knowledge.search({ company_id: activeCompanyId, query });
+      setResults(found);
+    } catch (err) {
+      setSearchError(String(err));
+    }
   }
 
   if (!activeCompanyId) {
@@ -95,6 +101,7 @@ export default function KnowledgePage() {
           >
             Search
           </button>
+          {searchError && <p className="text-sm text-red-500">{searchError}</p>}
           <div className="space-y-2">
             {results.map((r) => (
               <div

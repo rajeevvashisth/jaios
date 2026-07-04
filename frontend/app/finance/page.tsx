@@ -35,9 +35,18 @@ export default function FinancePage() {
 
   const refresh = useCallback(() => {
     if (!activeCompanyId) return;
-    api.products.list(activeCompanyId).then(setProducts);
-    api.finance.summary(activeCompanyId, productId || undefined).then(setSummary);
-    api.finance.listEntries(activeCompanyId, productId || undefined).then(setEntries);
+    api.products
+      .list(activeCompanyId)
+      .then(setProducts)
+      .catch((e) => setError(String(e)));
+    api.finance
+      .summary(activeCompanyId, productId || undefined)
+      .then(setSummary)
+      .catch((e) => setError(String(e)));
+    api.finance
+      .listEntries(activeCompanyId, productId || undefined)
+      .then(setEntries)
+      .catch((e) => setError(String(e)));
   }, [activeCompanyId, productId]);
 
   useEffect(() => {

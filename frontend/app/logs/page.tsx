@@ -7,9 +7,13 @@ import { EmptyState } from "@/components/EmptyState";
 
 export default function LogsPage() {
   const [entries, setEntries] = useState<AuditLogEntry[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.audit.list().then(setEntries);
+    api.audit
+      .list()
+      .then(setEntries)
+      .catch((e) => setError(String(e)));
   }, []);
 
   return (
@@ -18,6 +22,7 @@ export default function LogsPage() {
         title="Logs / Traces"
         description="Append-only audit log of every agent decision and tool call."
       />
+      {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
       {entries.length === 0 ? (
         <EmptyState message="No audit log entries yet." />
       ) : (

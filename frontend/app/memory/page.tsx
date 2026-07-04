@@ -10,12 +10,18 @@ export default function MemoryPage() {
   const { activeCompanyId } = useCompany();
   const [records, setRecords] = useState<MemoryRecord[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function loadCompanyMemory() {
     if (!activeCompanyId) return;
-    const results = await api.memory.list("company", activeCompanyId);
-    setRecords(results);
-    setLoaded(true);
+    setError(null);
+    try {
+      const results = await api.memory.list("company", activeCompanyId);
+      setRecords(results);
+      setLoaded(true);
+    } catch (err) {
+      setError(String(err));
+    }
   }
 
   return (
@@ -34,6 +40,7 @@ export default function MemoryPage() {
           >
             Load company-scope memory
           </button>
+          {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
           {loaded && records.length === 0 && <EmptyState message="No memory records yet." />}
           <div className="space-y-2">
             {records.map((r) => (

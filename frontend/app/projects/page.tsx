@@ -18,8 +18,14 @@ export default function ProjectsPage() {
 
   const refresh = useCallback(() => {
     if (!activeCompanyId) return;
-    api.projects.list(activeCompanyId).then(setProjects);
-    api.products.list(activeCompanyId).then(setProducts);
+    api.projects
+      .list(activeCompanyId)
+      .then(setProjects)
+      .catch((e) => setError(String(e)));
+    api.products
+      .list(activeCompanyId)
+      .then(setProducts)
+      .catch((e) => setError(String(e)));
   }, [activeCompanyId]);
 
   useEffect(() => {

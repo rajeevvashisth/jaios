@@ -21,10 +21,13 @@ export default function ProductStatusPage() {
       .productStatus(params.productId)
       .then(setReport)
       .catch((e) => setError(String(e)));
-    api.products.get(params.productId).then((p) => {
-      setProduct(p);
-      setWorkspacePath(p.local_workspace_path ?? "");
-    });
+    api.products
+      .get(params.productId)
+      .then((p) => {
+        setProduct(p);
+        setWorkspacePath(p.local_workspace_path ?? "");
+      })
+      .catch((e) => setError(String(e)));
   }, [params.productId]);
 
   async function handleSaveWorkspace(e: React.FormEvent) {

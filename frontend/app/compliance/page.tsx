@@ -60,7 +60,10 @@ export default function CompliancePage() {
 
   const refresh = useCallback(() => {
     if (!activeCompanyId) return;
-    api.compliance.listObligations(activeCompanyId, { includeCompleted }).then(setObligations);
+    api.compliance
+      .listObligations(activeCompanyId, { includeCompleted })
+      .then(setObligations)
+      .catch((e) => setError(String(e)));
   }, [activeCompanyId, includeCompleted]);
 
   useEffect(() => {
@@ -122,6 +125,7 @@ export default function CompliancePage() {
 
   async function handleComplete(id: string) {
     setBusyId(id);
+    setError(null);
     try {
       await api.compliance.complete(id);
       refresh();
