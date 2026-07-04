@@ -35,6 +35,7 @@ def start(payload: WorkflowStartRequest, db: Session = Depends(get_db)) -> Workf
             goal=goal,
             task_id=payload.task_id,
             project_id=payload.project_id,
+            product_id=payload.product_id,
             workspace_path=payload.workspace_path,
         )
     except KeyError as exc:

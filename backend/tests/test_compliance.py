@@ -2,8 +2,13 @@ from datetime import date, timedelta
 
 from app.models.company import Company
 from app.models.compliance import ComplianceObligation
-from app.schemas.compliance import ComplianceUrgency
-from app.services.compliance_service import compute_urgency, list_obligations, mark_completed
+from app.schemas.compliance import ComplianceObligationUpdate, ComplianceUrgency, FilingStatus
+from app.services.compliance_service import (
+    compute_urgency,
+    list_obligations,
+    mark_completed,
+    update_obligation,
+)
 
 TODAY = date(2026, 7, 3)
 
@@ -45,6 +50,16 @@ def test_compute_urgency_due_date_exactly_at_window_boundary_is_due_soon():
 
     obligation = _obligation(due_date=TODAY + timedelta(days=DUE_SOON_WINDOW_DAYS))
     assert compute_urgency(obligation, today=TODAY) == ComplianceUrgency.due_soon
+
+
+def test_compute_urgency_no_due_date_is_review_pending():
+    obligation = _obligation(due_date=None)
+    assert compute_urgency(obligation, today=TODAY) == ComplianceUrgency.review_pending
+
+
+def test_compute_urgency_not_applicable_reads_as_completed():
+    obligation = _obligation(due_date=None, applicability_status="not_applicable")
+    assert compute_urgency(obligation, today=TODAY) == ComplianceUrgency.completed
 
 
 def test_list_obligations_excludes_completed_by_default(db_session):
@@ -93,3 +108,78 @@ def test_mark_completed_sets_completed_and_timestamp(db_session):
     assert result.completed is True
     assert result.completed_at is not None
     assert result.urgency == ComplianceUrgency.completed
+
+
+def test_create_obligation_defaults_to_review_pending_when_persisted(db_session):
+    """Unlike the in-memory ``_obligation()`` helper above, a row that's
+    actually inserted picks up the model's column defaults."""
+    company = Company(name="Default Status Co")
+    db_session.add(company)
+    db_session.commit()
+
+    obligation = ComplianceObligation(
+        company_id=company.id, title="GST filing", category="tax", due_date=None
+    )
+    db_session.add(obligation)
+    db_session.commit()
+    db_session.refresh(obligation)
+
+    assert obligation.applicability_status == "review_pending"
+    assert obligation.filing_status == "draft"
+
+
+def test_update_obligation_applies_partial_changes(db_session):
+    company = Company(name="Update Obligation Co")
+    db_session.add(company)
+    db_session.commit()
+
+    obligation = ComplianceObligation(
+        company_id=company.id, title="GST filing", category="tax", due_date=None
+    )
+    db_session.add(obligation)
+    db_session.commit()
+
+    result = update_obligation(
+        db_session,
+        obligation_id=obligation.id,
+        updates=ComplianceObligationUpdate(
+            applicability_status="applicable",
+            filing_status=FilingStatus.awaiting_ca_vendor,
+            external_owner="ABC & Co, Chartered Accountants",
+            required_documents=[{"name": "Sales register", "obtained": True}],
+        ),
+    )
+
+    assert result.applicability_status == "applicable"
+    assert result.filing_status == FilingStatus.awaiting_ca_vendor
+    assert result.external_owner == "ABC & Co, Chartered Accountants"
+    assert result.required_documents[0].name == "Sales register"
+    assert result.required_documents[0].obtained is True
+    # not yet in a terminal filing status -> completed must stay false
+    assert result.completed is False
+
+
+def test_update_obligation_to_filed_marks_completed(db_session):
+    company = Company(name="Filed Obligation Co")
+    db_session.add(company)
+    db_session.commit()
+
+    obligation = ComplianceObligation(
+        company_id=company.id, title="Form 11", category="corporate", due_date=None
+    )
+    db_session.add(obligation)
+    db_session.commit()
+
+    result = update_obligation(
+        db_session,
+        obligation_id=obligation.id,
+        updates=ComplianceObligationUpdate(
+            filing_status=FilingStatus.filed,
+            proof_reference={"srn": "ABC1234567"},
+        ),
+    )
+
+    assert result.filing_status == FilingStatus.filed
+    assert result.completed is True
+    assert result.completed_at is not None
+    assert result.proof_reference == {"srn": "ABC1234567"}

@@ -37,7 +37,11 @@ class WorkflowStartRequest(BaseModel):
     company_id: str
     task_id: str | None = None
     project_id: str | None = None
+    product_id: str | None = None
     initiating_actor: str = "human"
+    # If omitted, resolved from product_id (directly, or via task_id/
+    # project_id's product) -> Product.local_workspace_path. See
+    # services/workflow_service.py's _resolve_workspace_path.
     workspace_path: str | None = None
     input: dict = {}
 

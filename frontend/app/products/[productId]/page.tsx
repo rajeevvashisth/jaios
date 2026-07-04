@@ -3,13 +3,17 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { api, type ProductStatusReport } from "@/lib/api";
+import { api, type Product, type ProductStatusReport } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import { PageHeader } from "@/components/PageHeader";
 
 export default function ProductStatusPage() {
   const params = useParams<{ productId: string }>();
   const [report, setReport] = useState<ProductStatusReport | null>(null);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [workspacePath, setWorkspacePath] = useState("");
+  const [savingWorkspace, setSavingWorkspace] = useState(false);
+  const [workspaceSaved, setWorkspaceSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -17,7 +21,29 @@ export default function ProductStatusPage() {
       .productStatus(params.productId)
       .then(setReport)
       .catch((e) => setError(String(e)));
+    api.products.get(params.productId).then((p) => {
+      setProduct(p);
+      setWorkspacePath(p.local_workspace_path ?? "");
+    });
   }, [params.productId]);
+
+  async function handleSaveWorkspace(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingWorkspace(true);
+    setWorkspaceSaved(false);
+    setError(null);
+    try {
+      const updated = await api.products.update(params.productId, {
+        local_workspace_path: workspacePath || null,
+      });
+      setProduct(updated);
+      setWorkspaceSaved(true);
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setSavingWorkspace(false);
+    }
+  }
 
   if (error) {
     return (
@@ -48,6 +74,36 @@ export default function ProductStatusPage() {
         <StatCard label="Blocked" value={report.task_counts.blocked} />
         <StatCard label="Done" value={report.task_counts.done} />
       </div>
+
+      <h2 className="mb-2 text-sm font-medium">Workspace</h2>
+      {product && (
+        <form
+          onSubmit={handleSaveWorkspace}
+          className="mb-8 flex flex-wrap items-end gap-3 rounded-md border border-neutral-200 p-4 dark:border-neutral-800"
+        >
+          <div className="min-w-[320px] flex-1">
+            <label className="block text-xs text-neutral-500">Local workspace path</label>
+            <input
+              value={workspacePath}
+              onChange={(e) => setWorkspacePath(e.target.value)}
+              placeholder="/Users/you/Documents/Apps/YourProduct"
+              className="mt-1 w-full rounded-md border border-neutral-300 bg-transparent px-3 py-1.5 text-sm dark:border-neutral-700"
+            />
+            <p className="mt-1 text-xs text-neutral-500">
+              Workflows started for this product (or its tasks/projects) default to this path
+              unless a workspace is passed explicitly.
+            </p>
+          </div>
+          <button
+            type="submit"
+            disabled={savingWorkspace}
+            className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+          >
+            {savingWorkspace ? "Saving…" : "Save"}
+          </button>
+          {workspaceSaved && <p className="text-sm text-green-600">Saved.</p>}
+        </form>
+      )}
 
       <h2 className="mb-2 text-sm font-medium">Finance</h2>
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">

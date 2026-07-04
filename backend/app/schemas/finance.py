@@ -14,17 +14,45 @@ class FinanceEntryType(StrEnum):
     capital = "capital"
 
 
+class PaymentStatus(StrEnum):
+    paid = "paid"
+    unpaid = "unpaid"
+    partially_paid = "partially_paid"
+    reimbursable = "reimbursable"
+
+
 class FinanceEntryCreate(BaseModel):
     company_id: str
     product_id: str | None = None
     entry_type: FinanceEntryType
     category: str
+    subcategory: str | None = None
     amount_cents: int
     currency: str = "INR"
     description: str | None = None
     occurred_on: date
     is_recurring: bool = False
     recurrence_interval: str | None = None
+    vendor: str | None = None
+    payment_status: PaymentStatus = PaymentStatus.paid
+    payment_method: str | None = None
+    proof_reference: dict = {}
+    linked_compliance_id: str | None = None
+
+
+class FinanceEntryUpdate(BaseModel):
+    category: str | None = None
+    subcategory: str | None = None
+    amount_cents: int | None = None
+    description: str | None = None
+    occurred_on: date | None = None
+    is_recurring: bool | None = None
+    recurrence_interval: str | None = None
+    vendor: str | None = None
+    payment_status: PaymentStatus | None = None
+    payment_method: str | None = None
+    proof_reference: dict | None = None
+    linked_compliance_id: str | None = None
 
 
 class FinanceEntryRead(FinanceEntryCreate):

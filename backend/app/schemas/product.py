@@ -26,6 +26,7 @@ class ProductBase(BaseModel):
     status: str = "active"
     description: str | None = None
     roadmap: list[str] = []
+    local_workspace_path: str | None = None
 
 
 class ProductCreate(ProductBase):
@@ -40,6 +41,7 @@ class ProductUpdate(BaseModel):
     status: str | None = None
     description: str | None = None
     roadmap: list[str] | None = None
+    local_workspace_path: str | None = None
 
 
 class ProductRead(ProductBase):

@@ -34,6 +34,10 @@ export type Company = {
   name: string;
   mission: string | null;
   strategic_goals: string[];
+  entity_type: string | null;
+  country: string;
+  jurisdiction_state: string | null;
+  base_currency: string;
 };
 
 export type Product = {
@@ -46,6 +50,7 @@ export type Product = {
   status: string;
   description: string | null;
   roadmap: string[];
+  local_workspace_path: string | null;
 };
 
 export type Project = {
@@ -158,18 +163,26 @@ export type KnowledgeSearchResult = {
   score: number;
 };
 
+export type PaymentStatus = "paid" | "unpaid" | "partially_paid" | "reimbursable";
+
 export type FinanceEntry = {
   id: string;
   company_id: string;
   product_id: string | null;
   entry_type: "revenue" | "expense" | "capital";
   category: string;
+  subcategory: string | null;
   amount_cents: number;
   currency: string;
   description: string | null;
   occurred_on: string;
   is_recurring: boolean;
   recurrence_interval: string | null;
+  vendor: string | null;
+  payment_status: PaymentStatus;
+  payment_method: string | null;
+  proof_reference: Record<string, unknown>;
+  linked_compliance_id: string | null;
 };
 
 export type CategoryBreakdown = { category: string; amount_cents: number };
@@ -187,7 +200,32 @@ export type FinanceSummary = {
   capital_by_category: CategoryBreakdown[];
 };
 
-export type ComplianceUrgency = "completed" | "overdue" | "due_soon" | "upcoming";
+export type ComplianceUrgency =
+  | "completed"
+  | "overdue"
+  | "due_soon"
+  | "upcoming"
+  | "review_pending";
+
+export type ApplicabilityStatus = "applicable" | "not_applicable" | "review_pending";
+
+export type FilingStatus =
+  | "draft"
+  | "under_review"
+  | "not_applicable"
+  | "applicability_review_pending"
+  | "upcoming"
+  | "in_progress"
+  | "awaiting_documents"
+  | "awaiting_finance_input"
+  | "awaiting_ca_vendor"
+  | "ready_for_filing"
+  | "filed"
+  | "filed_proof_pending"
+  | "completed"
+  | "overdue";
+
+export type RequiredDocument = { name: string; obtained: boolean };
 
 export type ComplianceObligation = {
   id: string;
@@ -196,11 +234,20 @@ export type ComplianceObligation = {
   title: string;
   category: string;
   owner_agent_key: string | null;
-  due_date: string;
+  due_date: string | null;
   completed: boolean;
   completed_at: string | null;
   recurrence: string;
   notes: string | null;
+  jurisdiction_level: string | null;
+  governing_authority: string | null;
+  applicability_status: ApplicabilityStatus;
+  filing_status: FilingStatus;
+  external_owner: string | null;
+  required_documents: RequiredDocument[];
+  proof_reference: Record<string, unknown>;
+  linked_task_id: string | null;
+  linked_expense_id: string | null;
   urgency: ComplianceUrgency;
 };
 
@@ -263,8 +310,16 @@ export type User = {
 export const api = {
   companies: {
     list: () => request<Company[]>("/companies"),
-    create: (payload: { name: string; mission?: string }) =>
-      request<Company>("/companies", { method: "POST", body: JSON.stringify(payload) }),
+    create: (
+      payload: { name: string; mission?: string } & Partial<
+        Pick<Company, "entity_type" | "country" | "jurisdiction_state" | "base_currency" | "strategic_goals">
+      >,
+    ) => request<Company>("/companies", { method: "POST", body: JSON.stringify(payload) }),
+    update: (companyId: string, payload: Partial<Omit<Company, "id">>) =>
+      request<Company>(`/companies/${companyId}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      }),
   },
   products: {
     list: (companyId?: string) =>
@@ -272,6 +327,11 @@ export const api = {
     get: (productId: string) => request<Product>(`/products/${productId}`),
     create: (payload: Partial<Product> & { name: string; company_id: string }) =>
       request<Product>("/products", { method: "POST", body: JSON.stringify(payload) }),
+    update: (productId: string, payload: Partial<Omit<Product, "id" | "company_id">>) =>
+      request<Product>(`/products/${productId}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      }),
   },
   projects: {
     list: (companyId?: string) =>
@@ -303,6 +363,7 @@ export const api = {
       goal: string;
       task_id?: string;
       project_id?: string;
+      product_id?: string;
       workspace_path?: string;
       initiating_actor?: string;
     }) =>
@@ -313,6 +374,7 @@ export const api = {
           company_id: payload.company_id,
           task_id: payload.task_id,
           project_id: payload.project_id,
+          product_id: payload.product_id,
           workspace_path: payload.workspace_path,
           initiating_actor: payload.initiating_actor ?? "human",
           input: { goal: payload.goal },
@@ -361,14 +423,41 @@ export const api = {
       product_id?: string;
       entry_type: "revenue" | "expense" | "capital";
       category: string;
+      subcategory?: string;
       amount_cents: number;
       currency?: string;
       description?: string;
       occurred_on: string;
       is_recurring?: boolean;
+      vendor?: string;
+      payment_status?: PaymentStatus;
+      payment_method?: string;
+      proof_reference?: Record<string, unknown>;
     }) =>
       request<FinanceEntry>("/finance/entries", {
         method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    updateEntry: (
+      entryId: string,
+      payload: Partial<
+        Pick<
+          FinanceEntry,
+          | "category"
+          | "subcategory"
+          | "amount_cents"
+          | "description"
+          | "occurred_on"
+          | "vendor"
+          | "payment_status"
+          | "payment_method"
+          | "proof_reference"
+          | "linked_compliance_id"
+        >
+      >,
+    ) =>
+      request<FinanceEntry>(`/finance/entries/${entryId}`, {
+        method: "PATCH",
         body: JSON.stringify(payload),
       }),
     summary: (companyId: string, productId?: string) =>
@@ -389,18 +478,56 @@ export const api = {
       title: string;
       category: string;
       owner_agent_key?: string;
-      due_date: string;
+      due_date?: string;
       recurrence?: string;
       notes?: string;
+      jurisdiction_level?: string;
+      governing_authority?: string;
+      applicability_status?: ApplicabilityStatus;
+      filing_status?: FilingStatus;
+      external_owner?: string;
+      required_documents?: RequiredDocument[];
     }) =>
       request<ComplianceObligation>("/compliance/obligations", {
         method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    update: (
+      obligationId: string,
+      payload: Partial<
+        Pick<
+          ComplianceObligation,
+          | "title"
+          | "category"
+          | "owner_agent_key"
+          | "due_date"
+          | "recurrence"
+          | "notes"
+          | "jurisdiction_level"
+          | "governing_authority"
+          | "applicability_status"
+          | "filing_status"
+          | "external_owner"
+          | "required_documents"
+          | "proof_reference"
+          | "linked_task_id"
+          | "linked_expense_id"
+        >
+      >,
+    ) =>
+      request<ComplianceObligation>(`/compliance/obligations/${obligationId}`, {
+        method: "PATCH",
         body: JSON.stringify(payload),
       }),
     complete: (obligationId: string) =>
       request<ComplianceObligation>(`/compliance/obligations/${obligationId}/complete`, {
         method: "POST",
       }),
+    seedIndiaLlpFramework: (companyId: string) =>
+      request<ComplianceObligation[]>(
+        `/compliance/seed-india-llp-framework?company_id=${companyId}`,
+        { method: "POST" },
+      ),
   },
   reports: {
     ceoSummary: (companyId: string) =>

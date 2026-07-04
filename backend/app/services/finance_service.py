@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.finance import FinanceEntry
-from app.schemas.finance import CategoryBreakdown, FinanceSummary
+from app.schemas.finance import CategoryBreakdown, FinanceEntryUpdate, FinanceSummary
 
 
 def summarize_finances(
@@ -65,3 +65,19 @@ def summarize_finances(
             for k, v in sorted(buckets["capital"].items())
         ],
     )
+
+
+def update_entry(db: Session, *, entry_id: str, updates: FinanceEntryUpdate) -> FinanceEntry:
+    """Partial update — mainly for correcting a placeholder value (e.g. an
+    entry recorded with an approximate date) or transitioning
+    ``payment_status`` as a bill actually gets paid."""
+    entry = db.get(FinanceEntry, entry_id)
+    if entry is None:
+        raise ValueError(f"No such finance entry: {entry_id}")
+
+    for field, value in updates.model_dump(exclude_unset=True).items():
+        setattr(entry, field, value)
+
+    db.commit()
+    db.refresh(entry)
+    return entry

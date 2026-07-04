@@ -1,9 +1,12 @@
 from datetime import date
 
+import pytest
+
 from app.models.company import Company
 from app.models.finance import FinanceEntry
 from app.models.product import Product
-from app.services.finance_service import summarize_finances
+from app.schemas.finance import FinanceEntryUpdate
+from app.services.finance_service import summarize_finances, update_entry
 
 
 def _make_company_and_product(db_session, name: str):
@@ -169,3 +172,40 @@ def test_capital_contributions_are_tracked_separately_from_margin(db_session):
     assert {c.category: c.amount_cents for c in summary.capital_by_category} == {
         "founder_investment": 200_000_00
     }
+
+
+def test_update_entry_applies_partial_changes(db_session):
+    company = Company(name="Update Entry Co")
+    db_session.add(company)
+    db_session.commit()
+
+    entry = FinanceEntry(
+        company_id=company.id,
+        entry_type="expense",
+        category="cloud_infra",
+        amount_cents=5_00,
+        occurred_on=date(2026, 3, 1),
+        payment_status="unpaid",
+    )
+    db_session.add(entry)
+    db_session.commit()
+
+    updated = update_entry(
+        db_session,
+        entry_id=entry.id,
+        updates=FinanceEntryUpdate(
+            payment_status="paid",
+            vendor="AWS",
+            proof_reference={"invoice_no": "INV-001"},
+        ),
+    )
+
+    assert updated.payment_status == "paid"
+    assert updated.vendor == "AWS"
+    assert updated.proof_reference == {"invoice_no": "INV-001"}
+    assert updated.amount_cents == 5_00  # untouched fields are left alone
+
+
+def test_update_entry_raises_for_unknown_id(db_session):
+    with pytest.raises(ValueError):
+        update_entry(db_session, entry_id="not-a-real-id", updates=FinanceEntryUpdate())

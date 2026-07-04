@@ -1,12 +1,17 @@
 from datetime import date
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
 from app.models.finance import FinanceEntry
-from app.schemas.finance import FinanceEntryCreate, FinanceEntryRead, FinanceSummary
-from app.services.finance_service import summarize_finances
+from app.schemas.finance import (
+    FinanceEntryCreate,
+    FinanceEntryRead,
+    FinanceEntryUpdate,
+    FinanceSummary,
+)
+from app.services.finance_service import summarize_finances, update_entry
 
 router = APIRouter(prefix="/finance", tags=["finance"])
 
@@ -33,6 +38,16 @@ def list_entries(
     if entry_type:
         query = query.filter(FinanceEntry.entry_type == entry_type)
     return list(query.order_by(FinanceEntry.occurred_on.desc()).all())
+
+
+@router.patch("/entries/{entry_id}", response_model=FinanceEntryRead)
+def patch_entry(
+    entry_id: str, payload: FinanceEntryUpdate, db: Session = Depends(get_db)
+) -> FinanceEntry:
+    try:
+        return update_entry(db, entry_id=entry_id, updates=payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.get("/summary", response_model=FinanceSummary)

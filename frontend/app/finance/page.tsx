@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { api, type FinanceEntry, type FinanceSummary, type Product } from "@/lib/api";
+import { api, type FinanceEntry, type FinanceSummary, type PaymentStatus, type Product } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import { useCompany } from "@/lib/company-context";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
+
+const PAYMENT_STATUSES: PaymentStatus[] = ["paid", "unpaid", "partially_paid", "reimbursable"];
 
 export default function FinancePage() {
   const { activeCompanyId } = useCompany();
@@ -17,9 +19,14 @@ export default function FinancePage() {
 
   const [entryType, setEntryType] = useState<"revenue" | "expense" | "capital">("revenue");
   const [category, setCategory] = useState("");
+  const [subcategory, setSubcategory] = useState("");
   const [amount, setAmount] = useState("");
   const [occurredOn, setOccurredOn] = useState("");
   const [description, setDescription] = useState("");
+  const [vendor, setVendor] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("paid");
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [proofReference, setProofReference] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,13 +56,22 @@ export default function FinancePage() {
         product_id: productId || undefined,
         entry_type: entryType,
         category,
+        subcategory: subcategory || undefined,
         amount_cents: cents,
         occurred_on: occurredOn,
         description: description || undefined,
+        vendor: vendor || undefined,
+        payment_status: paymentStatus,
+        payment_method: paymentMethod || undefined,
+        proof_reference: proofReference ? { reference: proofReference } : undefined,
       });
       setCategory("");
+      setSubcategory("");
       setAmount("");
       setDescription("");
+      setVendor("");
+      setPaymentMethod("");
+      setProofReference("");
       refresh();
     } catch (err) {
       setError(String(err));
@@ -181,6 +197,17 @@ export default function FinancePage() {
           />
         </div>
         <div>
+          <label className="block text-xs text-neutral-500">
+            Subcategory <span className="text-neutral-400">(optional)</span>
+          </label>
+          <input
+            value={subcategory}
+            onChange={(e) => setSubcategory(e.target.value)}
+            placeholder="hosting"
+            className="mt-1 rounded-md border border-neutral-300 bg-transparent px-3 py-1.5 text-sm dark:border-neutral-700"
+          />
+        </div>
+        <div>
           <label className="block text-xs text-neutral-500">Amount</label>
           <input
             required
@@ -210,6 +237,56 @@ export default function FinancePage() {
             className="mt-1 w-full rounded-md border border-neutral-300 bg-transparent px-3 py-1.5 text-sm dark:border-neutral-700"
           />
         </div>
+        {entryType === "expense" && (
+          <>
+            <div>
+              <label className="block text-xs text-neutral-500">
+                Vendor <span className="text-neutral-400">(optional)</span>
+              </label>
+              <input
+                value={vendor}
+                onChange={(e) => setVendor(e.target.value)}
+                className="mt-1 rounded-md border border-neutral-300 bg-transparent px-3 py-1.5 text-sm dark:border-neutral-700"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-neutral-500">Payment status</label>
+              <select
+                value={paymentStatus}
+                onChange={(e) => setPaymentStatus(e.target.value as PaymentStatus)}
+                className="mt-1 rounded-md border border-neutral-300 bg-transparent px-2 py-1.5 text-sm dark:border-neutral-700"
+              >
+                {PAYMENT_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {s.replace(/_/g, " ")}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-neutral-500">
+                Payment method <span className="text-neutral-400">(optional)</span>
+              </label>
+              <input
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                placeholder="bank transfer"
+                className="mt-1 rounded-md border border-neutral-300 bg-transparent px-3 py-1.5 text-sm dark:border-neutral-700"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-neutral-500">
+                Proof / invoice ref <span className="text-neutral-400">(optional)</span>
+              </label>
+              <input
+                value={proofReference}
+                onChange={(e) => setProofReference(e.target.value)}
+                placeholder="invoice #, file link, etc."
+                className="mt-1 rounded-md border border-neutral-300 bg-transparent px-3 py-1.5 text-sm dark:border-neutral-700"
+              />
+            </div>
+          </>
+        )}
         <button
           type="submit"
           disabled={submitting}
@@ -229,6 +306,8 @@ export default function FinancePage() {
               <th className="pb-2">Type</th>
               <th className="pb-2">Category</th>
               <th className="pb-2">Amount</th>
+              <th className="pb-2">Vendor</th>
+              <th className="pb-2">Payment</th>
               <th className="pb-2">Description</th>
             </tr>
           </thead>
@@ -236,9 +315,16 @@ export default function FinancePage() {
             {entries.map((entry) => (
               <tr key={entry.id} className="border-t border-neutral-200 dark:border-neutral-800">
                 <td className="py-2">{entry.occurred_on}</td>
-                <td className="py-2">{entry.entry_type}</td>
+                <td className="py-2">
+                  {entry.entry_type}
+                  {entry.subcategory ? ` · ${entry.subcategory}` : ""}
+                </td>
                 <td className="py-2">{entry.category}</td>
                 <td className="py-2">{formatMoney(entry.amount_cents, entry.currency)}</td>
+                <td className="py-2">{entry.vendor ?? "—"}</td>
+                <td className="py-2 text-xs">
+                  {entry.entry_type === "expense" ? entry.payment_status.replace(/_/g, " ") : "—"}
+                </td>
                 <td className="py-2">{entry.description ?? "—"}</td>
               </tr>
             ))}

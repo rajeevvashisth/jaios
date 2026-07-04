@@ -4,11 +4,44 @@ from sqlalchemy.orm import Session
 from app.core.logging import get_logger
 from app.core.metrics import workflow_runs_total
 from app.db.base import utcnow
+from app.models.product import Product
+from app.models.project import Project
+from app.models.task import Task
 from app.models.workflow import WorkflowRun
 from app.orchestration.graph import get_graph
 from app.orchestration.state import WorkflowState
 
 logger = get_logger(__name__)
+
+
+def _resolve_workspace_path(
+    db: Session,
+    *,
+    explicit: str | None,
+    product_id: str | None,
+    task_id: str | None,
+    project_id: str | None,
+) -> str | None:
+    """An explicit ``workspace_path`` always wins. Otherwise, resolve the
+    product this run is scoped to (directly, or via its task/project) and
+    use that product's stored ``local_workspace_path`` — so a workflow tied
+    to e.g. ThandiMandi operates on the real repo without it having to be
+    typed in on every run."""
+    if explicit:
+        return explicit
+
+    resolved_product_id = product_id
+    if resolved_product_id is None and task_id is not None:
+        task = db.get(Task, task_id)
+        resolved_product_id = task.product_id if task else None
+    if resolved_product_id is None and project_id is not None:
+        project = db.get(Project, project_id)
+        resolved_product_id = project.product_id if project else None
+
+    if resolved_product_id is None:
+        return None
+    product = db.get(Product, resolved_product_id)
+    return product.local_workspace_path if product else None
 
 
 def _apply_post_invoke_status(run: WorkflowRun, result: dict, *, rejected: bool = False) -> None:
@@ -38,10 +71,15 @@ def start_workflow(
     goal: str,
     task_id: str | None = None,
     project_id: str | None = None,
+    product_id: str | None = None,
     workspace_path: str | None = None,
 ) -> WorkflowRun:
     """Create a WorkflowRun row and drive the named graph to completion or
     its first approval checkpoint."""
+    workspace_path = _resolve_workspace_path(
+        db, explicit=workspace_path, product_id=product_id, task_id=task_id, project_id=project_id
+    )
+
     run = WorkflowRun(
         graph_name=graph_name,
         status="running",
